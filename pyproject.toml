@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tp-obs-v3"
+version = "0.1.0"
+description = "High-performance Python Observability SDK for OpenTelemetry"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+    "wrapt>=1.14.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "requests>=2.25.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
