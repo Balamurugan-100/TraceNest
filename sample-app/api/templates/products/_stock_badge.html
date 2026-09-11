@@ -1,0 +1,12 @@
+{% load product_extras %}
+{% with status=product|stock_status %}
+    <span class="badge {{ status }}">
+        {% if status == "out" %}
+            Out of stock
+        {% elif status == "low" %}
+            Low stock ({{ product.stock }} left)
+        {% else %}
+            In stock ({{ product.stock }} units)
+        {% endif %}
+    </span>
+{% endwith %}

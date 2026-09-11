@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTel Testing Dashboard</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; margin-bottom: 0.5rem; }
+        .subtitle { color: #666; margin-bottom: 2rem; }
+        .category {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .category h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+            color: #333;
+            font-size: 1.2rem;
+        }
+        .endpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        .endpoint-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1rem;
+            background: #fafafa;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .endpoint-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #ccc;
+        }
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .method {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: white;
+        }
+        .method.GET { background: #28a745; }
+        .method.POST { background: #007bff; }
+        .method.PUT { background: #ffc107; color: #333; }
+        .method.DELETE { background: #dc3545; }
+        .endpoint-name {
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+        .endpoint-desc {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+        .endpoint-url {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #e9ecef;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #495057;
+            word-break: break-all;
+            margin-bottom: 0.5rem;
+            display: block;
+            text-decoration: none;
+        }
+        a.endpoint-url {
+            color: #0066cc;
+            transition: all 0.15s ease;
+        }
+        a.endpoint-url:hover {
+            background: #dde8f5;
+            color: #004499;
+            text-decoration: underline;
+        }
+        .endpoint-name-link {
+            text-decoration: none;
+            color: inherit;
+            flex: 1;
+        }
+        .endpoint-name-link:hover .endpoint-name {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        .params {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #eee;
+        }
+        .param {
+            font-size: 0.75rem;
+            color: #666;
+            margin: 0.25rem 0;
+        }
+        .param code { background: #e9ecef; padding: 0.1rem 0.3rem; border-radius: 3px; }
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover { background: #1e7e34; }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover { background: #c82333; }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover { background: #545b62; }
+        .btn-open {
+            background: #17a2b8;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .btn-open:hover { background: #138496; }
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.open { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            max-height: 300px;
+            overflow: auto;
+        }
+        .result pre { margin: 0; font-size: 0.75rem; white-space: pre-wrap; }
+        .category-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            background: #e9ecef;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        .copy-btn {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+        .copy-btn:hover { background: #e9ecef; }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <h1>🔬 OTel Testing Dashboard</h1>
+    <p class="subtitle">All available endpoints for testing OpenTelemetry tracing, metrics, and logging</p>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Endpoint</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" id="modal-url" readonly>
+                <button class="copy-btn" onclick="copyUrl()">Copy URL</button>
+            </div>
+            <div class="form-group" id="param-fields"></div>
+            <div class="form-group" id="body-field" style="display:none;">
+                <label>Request Body (JSON)</label>
+                <textarea id="modal-body" rows="5"></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="sendRequest()">Send Request</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+            <div class="result" id="result" style="display:none;">
+                <strong>Response:</strong>
+                <pre id="result-content"></pre>
+            </div>
+        </div>
+    </div>
+
+    {% for cat_name, endpoints in categories.items %}
+    <div class="category">
+        <h2>{{ cat_name }}</h2>
+        <div class="endpoint-grid">
+            {% for ep in endpoints %}
+            <div class="endpoint-card">
+                <div class="category-tag">{{ ep.category }}</div>
+                <div class="endpoint-header">
+                    <span class="method {{ ep.method }}">{{ ep.method }}</span>
+                    {% if ep.method == "GET" %}
+                    <a href="{{ ep.url }}" target="_blank" class="endpoint-name-link" title="Open {{ ep.name }} in new tab"><span class="endpoint-name">{{ ep.name }}</span></a>
+                    {% else %}
+                    <span class="endpoint-name">{{ ep.name }}</span>
+                    {% endif %}
+                </div>
+                <div class="endpoint-desc">{{ ep.description }}</div>
+                {% if ep.method == "GET" %}
+                <a href="{{ ep.url }}" target="_blank" class="endpoint-url" title="Open {{ ep.url }} in new tab">{{ ep.url }} ↗</a>
+                {% else %}
+                <div class="endpoint-url">{{ ep.url }}</div>
+                {% endif %}
+                {% if ep.params %}
+                <div class="params">
+                    {% for p in ep.params %}
+                    <div class="param"><code>{{ p.name }}</code> = "{{ p.default }}" — {{ p.desc }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {{ ep|json_script }}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="openModalFrom(this)">Test</button>
+                    {% if ep.method == "GET" %}
+                    <a href="{{ ep.url }}" target="_blank" class="btn btn-open">Open</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        let currentEndpoint = null;
+
+        function openModalFrom(btn) {
+            const el = btn.closest(".endpoint-card").querySelector('script[type="application/json"]');
+            openModal(JSON.parse(el.textContent));
+        }
+        function openModal(ep) {
+            currentEndpoint = ep;
+            document.getElementById('modal-title').textContent = ep.name;
+            document.getElementById('modal-url').value = ep.url;
+            document.getElementById('result').style.display = 'none';
+
+            // Build param fields
+            const paramFields = document.getElementById('param-fields');
+            paramFields.innerHTML = '';
+            if (ep.params && ep.params.length > 0) {
+                ep.params.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.innerHTML = `
+                        <label>${p.name} <small>(${p.desc})</small></label>
+                        <input type="text" name="${p.name}" value="${p.default}" data-param="${p.name}">
+                    `;
+                    paramFields.appendChild(div);
+                });
+            }
+
+            // Body field
+            const bodyField = document.getElementById('body-field');
+            const bodyTextarea = document.getElementById('modal-body');
+            if (ep.body) {
+                bodyField.style.display = 'block';
+                bodyTextarea.value = ep.body;
+            } else {
+                bodyField.style.display = 'none';
+            }
+
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            currentEndpoint = null;
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('modal-url').value;
+            navigator.clipboard.writeText(url);
+            alert('Copied!');
+        }
+
+        async function sendRequest() {
+            if (!currentEndpoint) return;
+
+            let url = currentEndpoint.url;
+            const params = {};
+            document.querySelectorAll('#param-fields input').forEach(input => {
+                params[input.dataset.param] = input.value;
+            });
+
+            if (Object.keys(params).length > 0) {
+                const searchParams = new URLSearchParams(params);
+                url += (url.includes('?') ? '&' : '?') + searchParams.toString();
+            }
+
+            const bodyField = document.getElementById('body-field');
+            let options = { method: currentEndpoint.method };
+            
+            // Add CSRF token for non-GET requests
+            const headers = {};
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(currentEndpoint.method)) {
+                headers['X-CSRFToken'] = csrftoken;
+            }
+            
+            if (bodyField.style.display !== 'none') {
+                try {
+                    headers['Content-Type'] = 'application/json';
+                    options.headers = headers;
+                    options.body = document.getElementById('modal-body').value;
+                } catch (e) {
+                    alert('Invalid JSON in body');
+                    return;
+                }
+            } else if (Object.keys(headers).length > 0) {
+                options.headers = headers;
+            }
+
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('result-content');
+            resultDiv.style.display = 'block';
+            resultContent.textContent = 'Loading...';
+
+            try {
+                const resp = await fetch(url, options);
+                const text = await resp.text();
+                let display;
+                try {
+                    display = JSON.stringify(JSON.parse(text), null, 2);
+                } catch {
+                    display = text;
+                }
+                resultContent.textContent = `Status: ${resp.status} ${resp.statusText}\n\n${display}`;
+            } catch (e) {
+                resultContent.textContent = `Error: ${e.message}`;
+            }
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('modal').addEventListener('click', e => {
+            if (e.target.id === 'modal') closeModal();
+        });
+    </script>
+</body>
+</html>

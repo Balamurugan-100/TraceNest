@@ -1,0 +1,48 @@
+{% extends "products/base.html" %}
+
+{% load product_extras %}
+
+{% block title %}Product List{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1>Products</h1>
+        <input type="text" id="product-search" placeholder="Search products..." style="padding: 0.4rem 0.8rem; border: 1px solid #ccc; border-radius: 4px;">
+    </div>
+    {% if products %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td><a href="{% url 'product-detail-tmpl' product.id %}">{{ product.name }}</a></td>
+                    <td>{{ product.price|currency }}</td>
+                    <td>{{ product.stock }}</td>
+                    <td>
+                        {% with status=product|stock_status %}
+                            <span class="badge {{ status }}">{{ status|title }} ({{ product.stock }})</span>
+                        {% endwith %}
+                    </td>
+                    <td>{{ product.created_at|date:"Y-m-d H:i" }}</td>
+                    <td><a href="{% url 'product-detail-tmpl' product.id %}">View</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">No products</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No products available.</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+<script>
+    // Product List & Search enhancement script
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('product-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('tbody tr').forEach(function(row) {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>

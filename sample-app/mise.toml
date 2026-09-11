@@ -1,0 +1,5 @@
+[tools]
+python = "3.8.18"
+
+[settings]
+python.github_attestations = false

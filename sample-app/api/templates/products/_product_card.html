@@ -1,0 +1,12 @@
+<article class="card">
+    {% load product_extras %}
+    <h3><a href="{% url 'product-detail-tmpl' product.id %}">{{ product.name }}</a></h3>
+    <p>{{ product.description|truncatewords:20 }}</p>
+    <p>
+        <strong>{{ product.price|currency }}</strong> ·
+        updated {{ product.updated_at|date:"Y-m-d H:i" }}
+    </p>
+    <p>
+        {% include "products/_stock_badge.html" %}
+    </p>
+</article>

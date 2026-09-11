@@ -1,0 +1,45 @@
+{% extends "products/base.html" %}
+
+{% load product_extras %}
+
+{% block title %}{{ product.name|default:"Product Detail" }}{% endblock %}
+
+{% block content %}
+    <h1>Product Detail</h1>
+    {% if product %}
+        <div class="field">
+            <label>ID</label>
+            <div class="value">{{ product.id }}</div>
+        </div>
+        <div class="field">
+            <label>Name</label>
+            <div class="value">{{ product.name }}</div>
+        </div>
+        <div class="field">
+            <label>Description</label>
+            <div class="value">{{ product.description|default:"—" }}</div>
+        </div>
+        <div class="field">
+            <label>Price</label>
+            <div class="value">{{ product.price|currency }}</div>
+        </div>
+        <div class="field">
+            <label>Stock & Status</label>
+            <div class="value">
+                {{ product.stock }} units &nbsp;·&nbsp;
+                {% include "products/_stock_badge.html" %}
+            </div>
+        </div>
+        <div class="field">
+            <label>Created</label>
+            <div class="value">{{ product.created_at|date:"Y-m-d H:i:s" }}</div>
+        </div>
+        <div class="field">
+            <label>Updated</label>
+            <div class="value">{{ product.updated_at|date:"Y-m-d H:i:s" }}</div>
+        </div>
+    {% else %}
+        <p>Product not found</p>
+    {% endif %}
+    <p><a href="{% url 'product-list-tmpl' %}">Back to list</a></p>
+{% endblock %}

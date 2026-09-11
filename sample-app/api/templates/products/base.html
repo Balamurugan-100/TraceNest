@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Products{% endblock %} | OTel Sample</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 0 1rem; color: #333; }
+        a { color: #0066cc; }
+        .field { margin-bottom: 1rem; }
+        label { font-weight: bold; display: block; margin-bottom: 0.25rem; }
+        .value { padding: 0.5rem; background: #f5f5f5; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: left; }
+        th { background: #f5f5f5; }
+        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge.out { background: #f8d7da; color: #721c24; }
+        .badge.low { background: #fff3cd; color: #856404; }
+        .badge.in-stock { background: #d4edda; color: #155724; }
+        .card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    {% include "products/_header.html" %}
+    {% include "products/_breadcrumbs.html" %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    {% include "products/_footer.html" %}
+    {% include "products/_scripts.html" %}
+</body>
+</html>

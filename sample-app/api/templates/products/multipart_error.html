@@ -1,0 +1,30 @@
+{% extends "products/base.html" %}
+
+{% block title %}Multi-Part Page with Error in Middle{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width: 800px; margin: 0 auto; padding: 1.5rem;">
+    <h1>Multi-Part Page Waterfall Demonstration</h1>
+    <p>This page renders 4 sequential parts. Part 1 and Part 2 succeed, Part 3 (<code>_broken_widget.html</code>) throws an exception, and Part 4 is never reached.</p>
+
+    <!-- Part 1: Header Partial (Success) -->
+    <div class="part-1-container">
+        {% include "products/_header.html" %}
+    </div>
+
+    <!-- Part 2: Sidebar Partial (Success) -->
+    <div class="part-2-container">
+        {% include "products/_sidebar.html" %}
+    </div>
+
+    <!-- Part 3: Broken Widget Partial (Throws Error in Middle!) -->
+    <div class="part-3-container">
+        {% include "products/_broken_widget.html" %}
+    </div>
+
+    <!-- Part 4: Footer Partial (Never rendered due to Part 3 exception) -->
+    <div class="part-4-container">
+        {% include "products/_footer.html" %}
+    </div>
+</div>
+{% endblock %}
