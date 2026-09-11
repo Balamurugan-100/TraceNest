@@ -1,0 +1,11 @@
+.git
+.opencode
+.swarm
+.venv
+tests
+docs
+*.egg-info
+__pycache__
+*.py[cod]
+.pytest_cache
+docker

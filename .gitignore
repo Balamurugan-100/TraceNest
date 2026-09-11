@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.swarm/
+.venv/
+.pytest_cache/
+.opencode/
+scratch/
+dashboards/

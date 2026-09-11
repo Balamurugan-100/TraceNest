@@ -1,0 +1,86 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  postgresql/pgbouncer:
+    endpoint: pgbouncer:6432
+    transport: tcp
+    username: django
+    password: django
+    databases:
+      - pgbouncer
+    collection_interval: 10s
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 256
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    dimensions:
+      - name: http.method
+      - name: http.request.method
+      - name: http.status_code
+      - name: http.response.status_code
+      - name: http.target
+      - name: http.route
+      - name: url.path
+      - name: db.system
+      - name: db.system.name
+      - name: db.operation
+      - name: db.operation.name
+      - name: db.query.summary
+      - name: db.connection.pool
+      - name: db.instance
+      - name: db.namespace
+      - name: db.role
+      - name: db.statement
+      - name: net.peer.name
+      - name: server.address
+      - name: server.port
+      - name: peer.service
+      - name: error
+      - name: django.middleware
+      - name: django.middleware.name
+      - name: django.middleware.method
+      - name: django.view
+      - name: django.view.name
+      - name: django.cache.hit
+      - name: django.cache.backend
+    dimensions_cache_size: 5000
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: apm
+
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo, spanmetrics, debug]
+    metrics:
+      receivers: [otlp, spanmetrics, postgresql/pgbouncer]
+      processors: [batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info

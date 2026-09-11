@@ -1,0 +1,265 @@
+services:
+  # ==========================================================================
+  # Application stack (sample Django app)
+  # ==========================================================================
+  postgres:
+    image: postgres:16
+    container_name: django-otel-postgres
+    environment:
+      POSTGRES_DB: django_otel
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django_otel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    container_name: django-otel-pgbouncer
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./sample-app/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./sample-app/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+      - ./sample-app/pgbouncer/pg_hba.conf:/etc/pgbouncer/pg_hba.conf:ro
+      - pgbouncer_log:/var/log/pgbouncer
+    entrypoint: ["/opt/pgbouncer/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      slave1db:
+        condition: service_healthy
+
+  redis:
+    image: redis:7
+    container_name: django-otel-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  slave1db:
+    image: postgres:16
+    container_name: django-otel-slave1db
+    environment:
+      POSTGRES_DB: django_otel_slave1
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+    ports:
+      - "5434:5432"
+    volumes:
+      - slave1_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  slave2db:
+    image: postgres:16
+    container_name: django-otel-slave2db
+    environment:
+      POSTGRES_DB: django_otel_slave2
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+    ports:
+      - "5435:5432"
+    volumes:
+      - slave2_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave2"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  slave3db:
+    image: postgres:16
+    container_name: django-otel-slave3db
+    environment:
+      POSTGRES_DB: django_otel_slave3
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: django
+    ports:
+      - "5436:5432"
+    volumes:
+      - slave3_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave3"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  external-api:
+    image: mccutchen/go-httpbin:v2.14.0
+    container_name: django-otel-external-api
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: sample-app/Dockerfile
+    container_name: django-otel-web
+    command: sh -c "python manage.py setup_databases && gunicorn config.wsgi:application --config gunicorn.conf.py"
+    volumes:
+      - static_files:/app/staticfiles
+      - ./sample-app/api:/app/api
+      - ./sample-app/config:/app/config
+      - ./src:/app/src
+    expose:
+      - "8000"
+    environment:
+      - DJANGO_DB_HOST=pgbouncer
+      - DJANGO_DB_PORT=6432
+      - SLAVE1_DB_HOST=pgbouncer
+      - SLAVE1_DB_PORT=6432
+      - SLAVE1_DB_NAME=django_otel_slave1
+      - SLAVE2_DB_HOST=slave2db
+      - SLAVE2_DB_PORT=5432
+      - SLAVE3_DB_HOST=slave3db
+      - SLAVE3_DB_PORT=5432
+      - EXTERNAL_API_URL=https://github.com
+      - DJANGO_REDIS_URL=redis://redis:6379/1
+      - GUNICORN_WORKERS=4
+      - GUNICORN_THREADS=4
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tp-otel-collector:4318
+      - TRACENEST_DB_TWO_TIER=true
+    networks:
+      - default
+      - tp-observability-net
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      slave1db:
+        condition: service_healthy
+      slave2db:
+        condition: service_healthy
+      slave3db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    build: ./sample-app/nginx
+    container_name: django-otel-nginx
+    ports:
+      - "8001:80"
+    volumes:
+      - static_files:/app/staticfiles:ro
+    depends_on:
+      - web
+
+  django-lite:
+    build:
+      context: .
+      dockerfile: sample-django-lite-app/Dockerfile
+    container_name: django-lite-otel-app
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./sample-django-lite-app/app.py:/app/app.py
+      - ./src:/app/src
+    environment:
+      - OTEL_SERVICE_NAME=django-lite-app
+      - OTEL_ENVIRONMENT=production
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tp-otel-collector:4318
+    networks:
+      - default
+      - tp-observability-net
+    depends_on:
+      - otel-collector
+
+
+  # ==========================================================================
+  # Observability stack
+  # ==========================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    container_name: tp-otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./docker/otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver (used by tp_obs_v3 SDK)
+      - "8889:8889" # Prometheus metrics exporter
+    depends_on:
+      - tempo
+    networks:
+      - tp-observability-net
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tp-tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./docker/tempo/tempo-config.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200" # Tempo HTTP query endpoint
+    networks:
+      - tp-observability-net
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: tp-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090" # Prometheus Web UI & Query API
+    depends_on:
+      - otel-collector
+    networks:
+      - tp-observability-net
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: tp-grafana
+    volumes:
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor,tempoServiceMap
+    ports:
+      - "3000:3000" # Grafana UI
+    depends_on:
+      - prometheus
+      - tempo
+    networks:
+      - tp-observability-net
+
+networks:
+  tp-observability-net:
+    name: tp-observability-net
+
+volumes:
+  tempo_data:
+  prometheus_data:
+  grafana_data:
+  postgres_data:
+  slave1_data:
+  slave2_data:
+  slave3_data:
+  static_files:
+  pgbouncer_log:
+
