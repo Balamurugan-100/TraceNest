@@ -35,6 +35,8 @@ class S3StorageView(APIView):
 
         try:
             import botocore.session
+            from botocore.exceptions import BotoCoreError, ClientError
+
             session = botocore.session.get_session()
             client = session.create_client(
                 "s3",
@@ -43,17 +45,20 @@ class S3StorageView(APIView):
                 aws_secret_access_key="mock_secret_key",
                 endpoint_url="http://localhost:9000",
             )
+            status_msg = "success"
+            content_length = 42
+
             try:
                 res = client.list_objects_v2(Bucket=bucket_name, Prefix="inventory/")
                 content_length = len(str(res))
-            except Exception:
-                content_length = 42
+            except (BotoCoreError, ClientError, Exception) as err:
+                status_msg = f"traced_s3_call ({err.__class__.__name__})"
 
             return Response({
                 "storage": "s3",
                 "bucket": bucket_name,
                 "key": key,
-                "status": "success",
+                "status": status_msg,
                 "bytes": content_length,
             })
         except ImportError:
