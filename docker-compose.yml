@@ -47,6 +47,27 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: django-otel-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mock_access_key
+      MINIO_ROOT_PASSWORD: mock_secret_key
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+      - tp-observability-net
+
   slave1db:
     image: postgres:16
     container_name: django-otel-slave1db
@@ -129,6 +150,7 @@ services:
       - SLAVE3_DB_PORT=5432
       - EXTERNAL_API_URL=https://github.com
       - DJANGO_REDIS_URL=redis://redis:6379/1
+      - S3_ENDPOINT_URL=http://minio:9000
       - GUNICORN_WORKERS=4
       - GUNICORN_THREADS=4
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tp-otel-collector:4318
@@ -146,6 +168,8 @@ services:
       slave3db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   nginx:
@@ -177,7 +201,6 @@ services:
       - tp-observability-net
     depends_on:
       - otel-collector
-
 
   # ==========================================================================
   # Observability stack
@@ -262,4 +285,4 @@ volumes:
   slave3_data:
   static_files:
   pgbouncer_log:
-
+  minio_data:

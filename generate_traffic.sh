@@ -22,6 +22,7 @@ DURATION=0
 SLEEP_DELAY=0.3
 VERBOSE=0
 CONCURRENCY=1
+REQUEST_COUNT=0
 WORKER_DIR=""
 WORKER_ID=0
 
@@ -78,6 +79,10 @@ while [[ "$#" -gt 0 ]]; do
     CONCURRENCY="$2"
     shift
     ;;
+  -n | --count)
+    REQUEST_COUNT="$2"
+    shift
+    ;;
   -u | --url)
     BASE_URL="$2"
     shift
@@ -126,6 +131,7 @@ while [[ "$#" -gt 0 ]]; do
     echo "  -d, --duration N  Run continuously for N seconds"
     echo "  -s, --sleep SEC   Delay between request cycles in seconds (default: 0.3)"
     echo "  -c, --concurrency N  Run N parallel workers (default: 1)"
+    echo "  -n, --count N        Run exactly N requests then exit (default: unlimited)"
     echo "  -u, --url URL     Base URL (default: http://localhost:8001)"
     echo "  -v, --verbose     Print response body snippets"
     echo "  -h, --help        Show this help message"
@@ -417,6 +423,10 @@ run_worker_loop() {
 
     [ "$MODE" == "once" ] && break
 
+    if [ "$REQUEST_COUNT" -gt 0 ] && [ "$COUNT_TOTAL" -ge "$REQUEST_COUNT" ]; then
+      break
+    fi
+
     if [ "$MODE" == "duration" ]; then
       local now
       now=$(date +%s)
@@ -466,6 +476,10 @@ else
     run_traffic_cycle "$cycle"
 
     if [ "$MODE" == "once" ]; then
+      break
+    fi
+
+    if [ "$REQUEST_COUNT" -gt 0 ] && [ "$COUNT_TOTAL" -ge "$REQUEST_COUNT" ]; then
       break
     fi
 

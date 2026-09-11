@@ -34,8 +34,11 @@ class S3StorageView(APIView):
         key = request.GET.get("key", "inventory/products.json")
 
         try:
+            import os
             import botocore.session
             from botocore.exceptions import BotoCoreError, ClientError
+
+            endpoint_url = os.environ.get("S3_ENDPOINT_URL", "http://localhost:9000")
 
             session = botocore.session.get_session()
             client = session.create_client(
@@ -43,12 +46,19 @@ class S3StorageView(APIView):
                 region_name="us-east-1",
                 aws_access_key_id="mock_access_key",
                 aws_secret_access_key="mock_secret_key",
-                endpoint_url="http://localhost:9000",
+                endpoint_url=endpoint_url,
             )
             status_msg = "success"
             content_length = 42
 
             try:
+                try:
+                    client.head_bucket(Bucket=bucket_name)
+                except Exception:
+                    try:
+                        client.create_bucket(Bucket=bucket_name)
+                    except Exception:
+                        pass
                 res = client.list_objects_v2(Bucket=bucket_name, Prefix="inventory/")
                 content_length = len(str(res))
             except (BotoCoreError, ClientError, Exception) as err:
