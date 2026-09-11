@@ -2,6 +2,9 @@
 
 TraceNest is an OpenTelemetry-based observability SDK for synchronous Django applications. It creates a Django request waterfall without application-code changes, then exports standard OTLP traces and metrics to an OpenTelemetry Collector.
 
+> [!NOTE]
+> For a comprehensive technical deep-dive into TraceNest's internals, OTel defaults integration, PgBouncer pool topology, visual span icon system, and SQL/URL sanitization, read the [**TraceNest Architecture & Custom Enrichment Guide**](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docs/ARCHITECTURE_AND_ENRICHMENT_GUIDE.md).
+
 ## Repository Structure
 
 The repository is organized into two main subdirectories:
