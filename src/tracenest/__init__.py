@@ -1,0 +1,253 @@
+"""
+TraceNest: Python Observability SDK for OpenTelemetry.
+
+Provides complete distributed tracing and request waterfall instrumentation for Django and PostgreSQL.
+"""
+
+import atexit
+import logging
+import threading
+from typing import Any, Dict, Optional, Union
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider, SpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor, SpanExporter
+from opentelemetry.sdk.trace.sampling import (
+    ALWAYS_OFF,
+    ALWAYS_ON,
+    ParentBased,
+    TraceIdRatioBased,
+)
+from opentelemetry.trace import get_current_span, get_tracer
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.propagate import set_global_textmap
+
+from tracenest.config import SDKConfig
+from tracenest.exporter import SafeSpanExporter
+from tracenest.integrations import BaseIntegration, get_integration_manager
+from tracenest.sanitize import sanitize_sql, sanitize_url
+from tracenest.version import __version__
+
+logger = logging.getLogger("tracenest")
+
+_INITIALIZED = False
+_INIT_LOCK = threading.Lock()
+_ACTIVE_PROVIDER: Optional[TracerProvider] = None
+_ACTIVE_CONFIG: Optional[SDKConfig] = None
+
+
+def init(
+    service: Optional[str] = None,
+    service_name: Optional[str] = None,
+    environment: Optional[str] = None,
+    version: Optional[str] = None,
+    endpoint: Optional[str] = None,
+    traces_endpoint: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
+    sample_rate: Optional[float] = None,
+    disabled: Optional[bool] = None,
+    debug: Optional[bool] = None,
+    resource_attributes: Optional[Dict[str, Any]] = None,
+    integrations: Optional[Dict[str, bool]] = None,
+    exporter: Optional[SpanExporter] = None,
+    span_processor: Optional[SpanProcessor] = None,
+    export_batch: bool = True,
+    auto_patch: bool = True,
+    **kwargs: Any,
+) -> TracerProvider:
+    """
+    Initialize the TraceNest OpenTelemetry SDK.
+
+    Configures the global TracerProvider, W3C context propagation,
+    and OTLP HTTP trace exporter. Thread-safe and idempotent.
+
+    By default, auto_patch=True so all installed integrations (Django,
+    PostgreSQL, Redis, requests) are automatically detected and patched.
+    A single call in your Django settings.py is all you need:
+
+        import tracenest
+        tracenest.init(service="my-service")
+
+    The service name is auto-detected from Django settings if not provided.
+    The OTLP endpoint defaults to OTEL_EXPORTER_OTLP_ENDPOINT env var,
+    then http://localhost:4318.
+
+    Resource attributes follow OTel semantic conventions:
+      service.name, service.version, deployment.environment.name, service.instance.id
+    """
+    global _INITIALIZED, _ACTIVE_PROVIDER, _ACTIVE_CONFIG
+
+    with _INIT_LOCK:
+        if _INITIALIZED and _ACTIVE_PROVIDER is not None:
+            logger.debug("TraceNest is already initialized. Returning existing provider.")
+            return _ACTIVE_PROVIDER
+
+        config = SDKConfig.from_env_and_kwargs(
+            service=service,
+            service_name=service_name,
+            environment=environment,
+            version=version,
+            endpoint=endpoint,
+            traces_endpoint=traces_endpoint,
+            headers=headers,
+            sample_rate=sample_rate,
+            disabled=disabled,
+            debug=debug,
+            resource_attributes=resource_attributes,
+            integrations=integrations,
+            **kwargs,
+        )
+        _ACTIVE_CONFIG = config
+
+        if config.debug:
+            logging.basicConfig(level=logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
+
+        # Build Resource attributes
+        resource_data = {
+            "service.name": config.service_name,
+            "deployment.environment.name": config.environment,
+            "service.version": config.version,
+            "telemetry.sdk.name": "tracenest",
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.version": __version__,
+        }
+        resource_data["deployment.environment"] = config.environment
+        if config.resource_attributes:
+            resource_data.update(config.resource_attributes)
+        try:
+            import socket, os
+            resource_data.setdefault("service.instance.id", f"{socket.gethostname()}-{os.getpid()}")
+        except Exception:
+            pass
+        resource = Resource.create(resource_data)
+
+        # Configure Sampler
+        if config.disabled or config.sample_rate <= 0.0:
+            sampler = ALWAYS_OFF
+        elif config.sample_rate >= 1.0:
+            sampler = ALWAYS_ON
+        else:
+            sampler = ParentBased(root=TraceIdRatioBased(config.sample_rate))
+
+        # Create TracerProvider
+        provider = TracerProvider(resource=resource, sampler=sampler)
+
+        # Configure Exporter and Processor if not disabled
+        if not config.disabled:
+            if exporter is None:
+                if config.traces_endpoint:
+                    otlp_endpoint = config.traces_endpoint
+                else:
+                    base_ep = config.endpoint.rstrip("/")
+                    otlp_endpoint = base_ep if base_ep.endswith("/v1/traces") else f"{base_ep}/v1/traces"
+
+                try:
+                    exporter = OTLPSpanExporter(
+                        endpoint=otlp_endpoint,
+                        headers=config.headers or None,
+                    )
+                except Exception as exc:
+                    logger.warning("TraceNest: Failed to create OTLPSpanExporter: %s", exc)
+                    exporter = None
+
+            if exporter is not None:
+                # Wrap with SafeSpanExporter: telemetry errors NEVER crash or disrupt the host app
+                safe_exporter = SafeSpanExporter(
+                    exporter,
+                    endpoint=otlp_endpoint if "otlp_endpoint" in locals() else None,
+                )
+
+                if span_processor is None:
+                    if export_batch:
+                        span_processor = BatchSpanProcessor(safe_exporter)
+                    else:
+                        span_processor = SimpleSpanProcessor(safe_exporter)
+
+                provider.add_span_processor(span_processor)
+
+        # Set as global tracer provider
+        trace.set_tracer_provider(provider)
+        _ACTIVE_PROVIDER = provider
+        _INITIALIZED = True
+
+        # Setup W3C Trace Context propagator
+        set_global_textmap(TraceContextTextMapPropagator())
+
+        # Auto-patch installed integrations if requested
+        if auto_patch and not config.disabled:
+            try:
+                manager = get_integration_manager()
+                manager.apply_integrations(config=config)
+            except Exception as exc:
+                logger.debug("Failed to auto-apply integrations during init: %s", exc)
+
+        # Register shutdown on process exit
+        def _shutdown():
+            try:
+                provider.shutdown()
+            except Exception:
+                pass
+        atexit.register(_shutdown)
+
+        logger.info(
+            "TraceNest initialized successfully (service=%s, env=%s, endpoint=%s)",
+            config.service_name,
+            config.environment,
+            config.endpoint,
+        )
+
+        return provider
+
+
+def get_config() -> SDKConfig:
+    """Get active SDKConfig or default configuration."""
+    if _ACTIVE_CONFIG is not None:
+        return _ACTIVE_CONFIG
+    return SDKConfig.from_env_and_kwargs()
+
+
+def patch_all(**kwargs: Any) -> Dict[str, Any]:
+    """Auto-detect and apply all installed integrations (Django, PostgreSQL, etc.)."""
+    manager = get_integration_manager()
+    return manager.apply_integrations(config=get_config(), **kwargs)
+
+
+def _reset_for_testing() -> None:
+    """Internal helper to reset singleton state between unit tests."""
+    global _INITIALIZED, _ACTIVE_PROVIDER, _ACTIVE_CONFIG
+    with _INIT_LOCK:
+        if _ACTIVE_PROVIDER is not None:
+            try:
+                _ACTIVE_PROVIDER.shutdown()
+            except Exception:
+                pass
+        _INITIALIZED = False
+        _ACTIVE_PROVIDER = None
+        _ACTIVE_CONFIG = None
+        # Uninstrument all active integrations
+        try:
+            get_integration_manager().uninstrument_all()
+        except Exception:
+            pass
+        # Reset OpenTelemetry global state
+        trace._TRACER_PROVIDER = None  # type: ignore
+        if hasattr(trace, "_TRACER_PROVIDER_SET_ONCE"):
+            trace._TRACER_PROVIDER_SET_ONCE._done = False  # type: ignore
+
+
+__all__ = [
+    "init",
+    "patch_all",
+    "get_config",
+    "get_tracer",
+    "get_current_span",
+    "get_integration_manager",
+    "BaseIntegration",
+    "SDKConfig",
+    "sanitize_url",
+    "sanitize_sql",
+    "__version__",
+]

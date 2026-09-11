@@ -3,15 +3,19 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tp-obs-v3"
+name = "tracenest"
 version = "0.1.0"
-description = "High-performance Python Observability SDK for OpenTelemetry"
+description = "TraceNest: High-performance Python Observability SDK for OpenTelemetry"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+    "opentelemetry-instrumentation-django>=0.44b0",
+    "opentelemetry-instrumentation-requests>=0.44b0",
+    "opentelemetry-instrumentation-psycopg2>=0.44b0",
+    "opentelemetry-instrumentation-redis>=0.44b0",
     "wrapt>=1.14.0",
 ]
 

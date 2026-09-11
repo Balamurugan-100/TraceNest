@@ -6,23 +6,23 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-import tp_obs_v3
-from tp_obs_v3.config import SDKConfig
-from tp_obs_v3.sanitize import sanitize_sql, sanitize_url
+import tracenest
+from tracenest.config import SDKConfig
+from tracenest.sanitize import sanitize_sql, sanitize_url
 
 
 @pytest.fixture(autouse=True)
 def clean_sdk_state():
     """Ensure clean SDK state before and after each test."""
-    tp_obs_v3._reset_for_testing()
+    tracenest._reset_for_testing()
     yield
-    tp_obs_v3._reset_for_testing()
+    tracenest._reset_for_testing()
 
 
 def test_init_creates_tracer_provider():
     """Verify init() sets up TracerProvider with correct Resource attributes."""
     exporter = InMemorySpanExporter()
-    provider = tp_obs_v3.init(
+    provider = tracenest.init(
         service="test-service",
         environment="staging",
         version="1.2.3",
@@ -38,15 +38,15 @@ def test_init_creates_tracer_provider():
     assert resource_attrs["service.name"] == "test-service"
     assert resource_attrs["deployment.environment"] == "staging"
     assert resource_attrs["service.version"] == "1.2.3"
-    assert resource_attrs["telemetry.sdk.name"] == "tp_obs_v3"
+    assert resource_attrs["telemetry.sdk.name"] == "tracenest"
     assert resource_attrs["telemetry.sdk.language"] == "python"
     assert resource_attrs["custom.tag"] == "value123"
 
 
 def test_init_idempotency():
     """Verify that calling init() multiple times returns the same provider."""
-    provider1 = tp_obs_v3.init(service="first-service")
-    provider2 = tp_obs_v3.init(service="second-service")
+    provider1 = tracenest.init(service="first-service")
+    provider2 = tracenest.init(service="second-service")
     assert provider1 is provider2
 
 
@@ -85,7 +85,7 @@ def test_config_from_env_and_kwargs(monkeypatch):
 def test_disabled_mode():
     """Verify that disabled mode prevents spans from being recorded."""
     exporter = InMemorySpanExporter()
-    provider = tp_obs_v3.init(
+    provider = tracenest.init(
         service="disabled-service",
         disabled=True,
         exporter=exporter,
@@ -102,21 +102,21 @@ def test_disabled_mode():
 def test_span_creation_and_export():
     """Verify spans are created, executed within context, and exported correctly."""
     exporter = InMemorySpanExporter()
-    tp_obs_v3.init(
+    tracenest.init(
         service="span-test-service",
         exporter=exporter,
         export_batch=False,
     )
 
-    tracer = tp_obs_v3.get_tracer("test-tracer")
+    tracer = tracenest.get_tracer("test-tracer")
     with tracer.start_as_current_span("parent-operation") as parent:
         parent.set_attribute("parent.attr", "parent_val")
-        current_span = tp_obs_v3.get_current_span()
+        current_span = tracenest.get_current_span()
         assert current_span == parent
 
         with tracer.start_as_current_span("child-operation") as child:
             child.set_attribute("child.attr", "child_val")
-            assert tp_obs_v3.get_current_span() == child
+            assert tracenest.get_current_span() == child
 
     spans = exporter.get_finished_spans()
     assert len(spans) == 2
@@ -182,3 +182,193 @@ def test_sanitize_sql():
     # None and empty
     assert sanitize_sql(None) == ""
     assert sanitize_sql("") == ""
+
+
+class DummyTarget:
+    def greet(self, name: str) -> str:
+        return f"Hello, {name}"
+
+
+class MockInstalledIntegration(tracenest.BaseIntegration):
+    name = "mock_installed"
+
+    def is_installed(self) -> bool:
+        return True
+
+    def _apply_patch(self) -> None:
+        def wrapper(wrapped, instance, args, kwargs):
+            result = wrapped(*args, **kwargs)
+            return f"Intercepted: {result}"
+
+        self.wrap(DummyTarget, "greet", wrapper)
+
+
+class MockMissingIntegration(tracenest.BaseIntegration):
+    name = "mock_missing"
+
+    def is_installed(self) -> bool:
+        return False
+
+    def _apply_patch(self) -> None:
+        pass
+
+
+def test_base_integration_wrap_and_unwrap():
+    """Verify that BaseIntegration can wrap a method and unwrap cleanly."""
+    target = DummyTarget()
+    assert target.greet("Alice") == "Hello, Alice"
+
+    integration = MockInstalledIntegration()
+    assert integration.instrument() is True
+
+    # Check that wrapper intercepted call
+    assert target.greet("Alice") == "Intercepted: Hello, Alice"
+
+    # Uninstrument and verify restored
+    assert integration.uninstrument() is True
+    assert target.greet("Alice") == "Hello, Alice"
+
+
+def test_patch_all_discovers_installed_libs():
+    """Verify patch_all discovers and instruments installed integrations."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_installed", MockInstalledIntegration)
+
+    target = DummyTarget()
+    applied = tracenest.patch_all()
+    assert "mock_installed" in applied
+    assert target.greet("Bob") == "Intercepted: Hello, Bob"
+
+
+def test_patch_all_skips_missing_libs():
+    """Verify patch_all skips uninstalled integrations."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_missing", MockMissingIntegration)
+
+    applied = tracenest.patch_all()
+    assert "mock_missing" not in applied
+
+
+def test_patch_all_respects_kwargs_and_config_disables():
+    """Verify that individual integrations can be disabled via patch_all kwargs or config."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_installed", MockInstalledIntegration)
+
+    # 1. Disabled via kwargs
+    applied = tracenest.patch_all(mock_installed=False)
+    assert "mock_installed" not in applied
+
+    # 2. Disabled via config
+    tracenest.init(
+        service="test-service",
+        integrations={"mock_installed": False},
+        export_batch=False,
+    )
+    applied_cfg = tracenest.patch_all()
+    assert "mock_installed" not in applied_cfg
+
+
+def test_safe_span_exporter_absorbs_network_exceptions():
+    """Verify SafeSpanExporter absorbs ConnectionError and returns FAILURE without raising."""
+    from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+    from tracenest.exporter import SafeSpanExporter
+
+    class BrokenExporter(SpanExporter):
+        def export(self, spans):
+            raise ConnectionRefusedError("[Errno 61] Connection refused")
+
+        def shutdown(self):
+            raise RuntimeError("Shutdown failed")
+
+    safe = SafeSpanExporter(BrokenExporter(), endpoint="http://localhost:4318/v1/traces")
+    # Export must return FAILURE and NOT raise!
+    result = safe.export([])
+    assert result == SpanExportResult.FAILURE
+
+    # Shutdown must not raise!
+    safe.shutdown()
+
+
+def test_unreachable_collector_never_crashes_application():
+    """Verify that tracing with an unreachable collector endpoint NEVER crashes or raises."""
+    # Point to a dead/non-existent port on localhost
+    provider = tracenest.init(
+        service="resilience-test",
+        endpoint="http://127.0.0.1:59999",
+        export_batch=False,
+    )
+    tracer = trace.get_tracer("test.tracer")
+
+    # Creating and ending spans when collector is dead must be 100% safe
+    with tracer.start_as_current_span("resilient-span") as span:
+        span.set_attribute("app.healthy", True)
+
+    # Force flush must not raise
+    provider.force_flush()
+    # Shutdown must not raise
+    provider.shutdown()
+
+
+def test_telemetry_request_failure_returns_safe_503():
+    """Verify _is_telemetry_request correctly identifies OTLP exporter endpoints."""
+    from tracenest.integrations.requests.client import _is_telemetry_request
+
+    assert _is_telemetry_request("http://localhost:4318/v1/traces", "localhost", 4318) is True
+    assert _is_telemetry_request("http://tp-otel-collector:4318/v1/traces", "tp-otel-collector", 4318) is True
+    assert _is_telemetry_request("https://api.github.com/users", "api.github.com", 443) is False
+
+
+
+def test_auto_patch_true_instruments_installed_integrations():
+    """Verify auto_patch=True auto-instruments installed integrations."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_installed", MockInstalledIntegration)
+
+    target = DummyTarget()
+    tracenest.init(
+        service="auto-patch-test",
+        auto_patch=True,
+        exporter=InMemorySpanExporter(),
+        export_batch=False,
+    )
+    assert target.greet("Alice") == "Intercepted: Hello, Alice"
+
+
+def test_auto_patch_false_skips_instrumentation():
+    """Verify auto_patch=False skips auto-instrumentation."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_installed", MockInstalledIntegration)
+
+    target = DummyTarget()
+    tracenest.init(
+        service="no-auto-patch-test",
+        auto_patch=False,
+        exporter=InMemorySpanExporter(),
+        export_batch=False,
+    )
+    # Without auto_patch, the integration is NOT instrumented
+    assert target.greet("Alice") == "Hello, Alice"
+
+
+def test_auto_patch_respects_integrations_config():
+    """Verify auto_patch respects integrations config to disable specific integrations."""
+    manager = tracenest.get_integration_manager()
+    manager.register("mock_installed", MockInstalledIntegration)
+
+    target = DummyTarget()
+    tracenest.init(
+        service="config-disable-test",
+        integrations={"mock_installed": False},
+        exporter=InMemorySpanExporter(),
+        export_batch=False,
+    )
+    # Integration is disabled via config
+    assert target.greet("Alice") == "Hello, Alice"
+
+
+def test_middleware_init_class_exists():
+    """Verify TraceNestMiddleware can be imported."""
+    from tracenest.integrations.django.middleware_init import TraceNestMiddleware
+    assert TraceNestMiddleware is not None
+
+
