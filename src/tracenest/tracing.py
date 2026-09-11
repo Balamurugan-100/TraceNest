@@ -32,13 +32,14 @@ def traced_span(
     ) as span:
         try:
             yield span
-            if span.status.status_code == StatusCode.UNSET:
+            if span.is_recording() and hasattr(span, "status") and span.status.status_code == StatusCode.UNSET:
                 span.set_status(StatusCode.OK)
         except Exception as exc:
-            span.record_exception(exc)
-            span.set_attribute("error", True)
-            span.set_attribute("error.type", exc.__class__.__name__)
-            span.set_status(StatusCode.ERROR, description=str(exc))
+            if span.is_recording():
+                span.record_exception(exc)
+                span.set_attribute("error", True)
+                span.set_attribute("error.type", exc.__class__.__name__)
+                span.set_status(StatusCode.ERROR, description=str(exc))
             raise
 
 

@@ -175,7 +175,7 @@ class SDKConfig:
             except ValueError:
                 resolved_sample_rate = 1.0
         else:
-            resolved_sample_rate = 1.0
+            resolved_sample_rate = cls.__dataclass_fields__["sample_rate"].default
 
         # Clamp sample rate between 0.0 and 1.0
         resolved_sample_rate = max(0.0, min(1.0, resolved_sample_rate))

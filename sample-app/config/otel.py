@@ -30,8 +30,8 @@ def setup_telemetry():
         #   TRACENEST_ENDPOINT / OTEL_EXPORTER_OTLP_ENDPOINT
         # Or auto-detected from Django settings if configured there.
         tracenest.init(
-                service_name='otel-sample'
-                )
+            service_name="otel-sample",
+        )
         logger.info("TraceNest initialized with auto-patching")
         return True
     except Exception:

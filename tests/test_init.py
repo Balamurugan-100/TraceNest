@@ -372,3 +372,37 @@ def test_middleware_init_class_exists():
     assert TraceNestMiddleware is not None
 
 
+def test_sample_rate_zero():
+    """Verify ALWAYS_OFF sampler drops all spans."""
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.sampling import ALWAYS_OFF
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider(sampler=ALWAYS_OFF)
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    tracer = provider.get_tracer("sample-test")
+    with tracer.start_as_current_span("dropped-span"):
+        pass
+    assert len(exporter.get_finished_spans()) == 0
+
+
+def test_sample_rate_ratio():
+    """Verify TraceIdRatioBased(0.5) samples approximately half of root spans."""
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider(sampler=ParentBased(root=TraceIdRatioBased(0.5)))
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    tracer = provider.get_tracer("sample-test")
+    for i in range(100):
+        with tracer.start_as_current_span(f"root-span-{i}"):
+            pass
+    finished = exporter.get_finished_spans()
+    assert 20 <= len(finished) <= 80
+
+
+
+
