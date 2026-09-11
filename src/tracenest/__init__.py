@@ -125,12 +125,15 @@ def init(
         resource = Resource.create(resource_data)
 
         # Configure Sampler
-        if config.disabled or config.sample_rate <= 0.0:
+        if config.disabled:
             sampler = ALWAYS_OFF
-        elif config.sample_rate >= 1.0:
-            sampler = ALWAYS_ON
         else:
-            sampler = ParentBased(root=TraceIdRatioBased(config.sample_rate))
+            from tracenest.sampler import create_tracenest_sampler
+            sampler = create_tracenest_sampler(
+                global_sample_rate=config.sample_rate,
+                ignore_endpoints=config.ignore_endpoints,
+                endpoint_sample_rules=config.endpoint_sample_rules,
+            )
 
         # Create TracerProvider
         provider = TracerProvider(resource=resource, sampler=sampler)

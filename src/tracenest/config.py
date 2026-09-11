@@ -79,6 +79,9 @@ class SDKConfig:
     db_two_tier_spans: bool = False
     tags: Dict[str, Any] = field(default_factory=dict)
     on_request_span: Optional[Callable] = None
+    ignore_endpoints: List[str] = field(default_factory=list)
+    endpoint_sample_rules: Dict[str, float] = field(default_factory=dict)
+    sample_errors: bool = True
 
     @classmethod
     def from_env_and_kwargs(
@@ -262,6 +265,42 @@ class SDKConfig:
         # 13. Per-request span callback
         resolved_on_request_span = extra.get("on_request_span")
 
+        # 14. Endpoint sampling rules & ignores
+        kwarg_ignores = extra.get("ignore_endpoints") or extra.get("IGNORE_ENDPOINTS")
+        if kwarg_ignores is not None:
+            resolved_ignores = list(kwarg_ignores)
+        elif "TRACENEST_IGNORE_ENDPOINTS" in os.environ:
+            resolved_ignores = [p.strip() for p in os.environ["TRACENEST_IGNORE_ENDPOINTS"].split(",") if p.strip()]
+        else:
+            resolved_ignores = []
+
+        kwarg_rules = (
+            extra.get("endpoint_sample_rules")
+            or extra.get("endpoint_rules")
+            or extra.get("sample_rules")
+            or extra.get("ENDPOINT_SAMPLE_RULES")
+        )
+        if kwarg_rules is not None:
+            resolved_rules = dict(kwarg_rules)
+        elif "TRACENEST_ENDPOINT_SAMPLE_RULES" in os.environ:
+            resolved_rules = {}
+            for item in os.environ["TRACENEST_ENDPOINT_SAMPLE_RULES"].split(","):
+                item = item.strip()
+                if "=" in item:
+                    p, r = item.split("=", 1)
+                    try:
+                        resolved_rules[p.strip()] = float(r.strip())
+                    except ValueError:
+                        pass
+        else:
+            resolved_rules = {}
+
+        kwarg_sample_errors = extra.get("sample_errors")
+        if kwarg_sample_errors is not None:
+            resolved_sample_errors = bool(kwarg_sample_errors)
+        else:
+            resolved_sample_errors = _str_to_bool(os.getenv("TRACENEST_SAMPLE_ERRORS", "true"), default=True)
+
         return cls(
             service_name=resolved_service,
             environment=resolved_env,
@@ -280,4 +319,7 @@ class SDKConfig:
             db_two_tier_spans=resolved_db_two_tier,
             tags=resolved_tags,
             on_request_span=resolved_on_request_span,
+            ignore_endpoints=resolved_ignores,
+            endpoint_sample_rules=resolved_rules,
+            sample_errors=resolved_sample_errors,
         )

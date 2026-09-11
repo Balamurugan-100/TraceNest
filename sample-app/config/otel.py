@@ -31,6 +31,12 @@ def setup_telemetry():
         # Or auto-detected from Django settings if configured there.
         tracenest.init(
             service_name="otel-sample",
+            sample_rate=0.1,
+            ignore_endpoints=["/api/products/health/"],
+            endpoint_sample_rules={
+                "/api/s3-storage/": 1.0,
+            },
+            sample_errors=True,
         )
         logger.info("TraceNest initialized with auto-patching")
         return True
