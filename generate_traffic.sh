@@ -33,6 +33,7 @@ SERVICE_TEMPLATE=0
 SERVICE_SQL=0
 SERVICE_THROTTLE=0
 SERVICE_ERROR=0
+SERVICE_BOTO=0
 
 # Database-specific selection flags
 TARGET_DB_PRIMARY=0
@@ -114,6 +115,7 @@ while [[ "$#" -gt 0 ]]; do
   -a | --sql) SERVICE_SQL=1 ;;
   -k | --throttle) SERVICE_THROTTLE=1 ;;
   -y | --error) SERVICE_ERROR=1 ;;
+  -b | --boto | --s3) SERVICE_BOTO=1 ;;
 
   -h | --help)
     echo -e "${C_BOLD}Usage: $0 [OPTIONS]${C_RESET}"
@@ -141,6 +143,7 @@ while [[ "$#" -gt 0 ]]; do
     echo "  -p, --product     Spam product service endpoints"
     echo "  -r, --redis       Spam Redis cache endpoints"
     echo "  -x, --http        Spam HTTP downstream call endpoints"
+    echo "  -b, --boto, --s3  Spam Boto / S3 object storage endpoints"
     echo "  -m, --template    Spam HTML template rendering endpoints"
     echo "  -a, --sql         Spam SQL/threaded operation endpoints"
     echo "  -k, --throttle    Spam rate throttling burst endpoints"
@@ -334,8 +337,9 @@ run_traffic_cycle() {
     send_req "GET" "/api/cache-stats/" "" "Redis: Cache Backend Stats"
     send_req "GET" "/api/products/health/" "" "Full Health Check: All 4 Postgres DBs + Redis"
 
-    # 4. Outgoing HTTP Downstream Call (requests tracing)
+    # 4. Outgoing HTTP Downstream Call & Cloud Storage (requests & boto tracing)
     send_req "GET" "/api/products/external/" "" "HTTP Client: Downstream Call"
+    send_req "GET" "/api/s3-storage/" "" "Cloud Storage (Boto/S3): List Objects"
 
     # 5. POST Operations & Transactions (Primary + Replicas)
     send_req "POST" "/api/products/" "{\"name\": \"Widget-$rnd\", \"description\": \"Auto-generated product $rnd\", \"price\": \"$((rnd % 50 + 5)).99\", \"stock\": $((rnd % 200 + 1))}" "Postgres Primary: Create Product"
@@ -387,6 +391,11 @@ run_traffic_cycle() {
   if [ "$SERVICE_REDIS" -eq 1 ]; then
     send_req "GET" "/api/products/cache/" "" "Redis: Cache Get/Set"
     send_req "GET" "/api/cache-stats/" "" "Redis: Cache Backend Stats"
+  fi
+
+  # Boto / S3 Cloud Storage endpoints
+  if [ "$SERVICE_BOTO" -eq 1 ]; then
+    send_req "GET" "/api/s3-storage/" "" "Cloud Storage (Boto/S3): List Objects"
   fi
 }
 

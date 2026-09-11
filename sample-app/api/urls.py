@@ -18,6 +18,7 @@ from .views import (
     cache_stats,
     ThrottledView,
     MultiPartTemplateErrorView,
+    S3StorageView,
 )
 
 router = DefaultRouter()
@@ -25,6 +26,7 @@ router.register(r"products", ProductViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("s3-storage/", S3StorageView.as_view(), name="s3-storage"),
     path("throttled/", ThrottledView.as_view(), name="throttled"),
     path("template-error/", MultiPartTemplateErrorView.as_view(), name="template-error"),
     path("external/", ExternalCallView.as_view(), name="external-call"),

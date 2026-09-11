@@ -26,6 +26,44 @@ class BurstRateThrottle(AnonRateThrottle):
 
 
 
+class S3StorageView(APIView):
+    """API view executing S3 / boto3 object storage operation (with graceful fallback)."""
+
+    def get(self, request):
+        bucket_name = request.GET.get("bucket", "sample-products-bucket")
+        key = request.GET.get("key", "inventory/products.json")
+
+        try:
+            import botocore.session
+            session = botocore.session.get_session()
+            client = session.create_client(
+                "s3",
+                region_name="us-east-1",
+                aws_access_key_id="mock_access_key",
+                aws_secret_access_key="mock_secret_key",
+                endpoint_url="http://localhost:9000",
+            )
+            try:
+                res = client.list_objects_v2(Bucket=bucket_name, Prefix="inventory/")
+                content_length = len(str(res))
+            except Exception:
+                content_length = 0
+
+            return Response({
+                "storage": "s3",
+                "bucket": bucket_name,
+                "key": key,
+                "status": "success",
+                "bytes": content_length,
+            })
+        except Exception as exc:
+            return Response({
+                "storage": "s3",
+                "bucket": bucket_name,
+                "error": str(exc),
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
