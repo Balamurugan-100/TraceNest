@@ -19,6 +19,11 @@ _BUILTIN_INTEGRATIONS: Dict[str, str] = {
     "requests": "tracenest.integrations.requests.RequestsIntegration",
     "http": "tracenest.integrations.requests.RequestsIntegration",
     "urllib3": "tracenest.integrations.requests.RequestsIntegration",
+    "boto": "tracenest.integrations.boto.BotoIntegration",
+    "boto3": "tracenest.integrations.boto.BotoIntegration",
+    "botocore": "tracenest.integrations.boto.BotoIntegration",
+    "aws": "tracenest.integrations.boto.BotoIntegration",
+    "s3": "tracenest.integrations.boto.BotoIntegration",
 }
 
 _INTEGRATION_ALIASES: Dict[str, str] = {
@@ -27,6 +32,10 @@ _INTEGRATION_ALIASES: Dict[str, str] = {
     "psycopg": "postgres",
     "http": "requests",
     "urllib3": "requests",
+    "boto3": "boto",
+    "botocore": "boto",
+    "aws": "boto",
+    "s3": "boto",
 }
 
 

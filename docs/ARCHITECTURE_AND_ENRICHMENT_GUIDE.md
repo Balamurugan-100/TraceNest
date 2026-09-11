@@ -101,7 +101,7 @@ The table below contrasts standard OpenTelemetry Contrib behavior with TraceNest
 | **Django Route Normalization** | Raw URL path (e.g. `/api/products/42/`) causing high metric cardinality | Low-cardinality route template (e.g. `/api/products/<id>/`) extracted from `resolver_match` | Prevents metric explosion in Prometheus / Grafana dashboards while storing full URL in `url.full`. |
 | **Django Templates** | Not instrumented | Wraps `Template.render` with re-entrancy guards and exclude pattern matching (`django/forms/*`) | Identifies template rendering overhead without cluttering spans with internal form widget partials. |
 | **Django Auth** | Not instrumented | Wraps `login` and `authenticate`, tagging `user.id`, `user.username`, `user.email` while redacting passwords | Correlates performance issues to specific authenticated users. |
-| **Outgoing HTTP (`requests`)** | Plain HTTP method (e.g. `GET`) | Icon badge `🌐 HTTP GET api.github.com` + automatic query string sanitization | Instantly highlights external API latency in waterfall traces. |
+| **Boto / S3 Cloud SDK** | Not instrumented by default | Auto-instruments `botocore` / `boto3` for S3 (AWS, MinIO, Cloudflare R2, Wasabi, LocalStack) via `BotoIntegration` | Captures object storage operations (`GetObject`, `PutObject`) across all cloud & self-hosted S3 endpoints. |
 | **Self-Tracing Protection** | OTLP export calls can trigger telemetry spans recursively | `_is_telemetry_request` filters OTLP collector endpoint traffic (`4317`/`4318`) | Prevents infinite trace export feedback loops. |
 
 ---

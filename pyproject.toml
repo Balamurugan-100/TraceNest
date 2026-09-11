@@ -16,6 +16,7 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.44b0",
     "opentelemetry-instrumentation-psycopg2>=0.44b0",
     "opentelemetry-instrumentation-redis>=0.44b0",
+    "opentelemetry-instrumentation-botocore>=0.44b0",
     "wrapt>=1.14.0",
 ]
 
