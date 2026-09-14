@@ -3,7 +3,9 @@
 TraceNest is an OpenTelemetry-based observability SDK for synchronous Django applications. It creates a Django request waterfall without application-code changes, then exports standard OTLP traces and metrics to an OpenTelemetry Collector.
 
 > [!NOTE]
-> For a comprehensive technical deep-dive into TraceNest's internals, OTel defaults integration, PgBouncer pool topology, visual span icon system, and SQL/URL sanitization, read the [**TraceNest Architecture & Custom Enrichment Guide**](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docs/ARCHITECTURE_AND_ENRICHMENT_GUIDE.md).
+> - For a comprehensive walkthrough of how this SDK was built from scratch and how to write new instrumentations, read the [**SDK Build & Developer Instrumentation Guide**](file:///home/kaizen/workspace/professional/OTEL-SDK/docs/SDK_BUILD_AND_INSTRUMENTATION_GUIDE.md).
+> - For mastering PromQL, understanding spanmetrics, and building custom Grafana dashboards, read the [**Prometheus, PromQL & Grafana Dashboard Guide**](file:///home/kaizen/workspace/professional/OTEL-SDK/docs/PROMQL_AND_GRAFANA_DASHBOARDS_GUIDE.md).
+> - For deep-dive architectural notes on OTel defaults, PgBouncer topology, and visual span icons, read the [**TraceNest Architecture & Custom Enrichment Guide**](file:///home/kaizen/workspace/professional/OTEL-SDK/docs/ARCHITECTURE_AND_ENRICHMENT_GUIDE.md).
 
 ## Repository Structure
 

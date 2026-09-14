@@ -2,6 +2,9 @@
 
 This document is the definitive technical reference for **TraceNest SDK v3**. It details how TraceNest initializes OpenTelemetry defaults, where standard OTel instrumentors are leveraged, and how TraceNest layers custom APM enrichments to deliver Datadog-grade visual telemetry, PgBouncer pool topology, Django middleware waterfalls, SQL/URL sanitization, and self-tracing protection.
 
+> [!TIP]
+> If you are looking for a complete beginner-to-advanced walkthrough explaining how this SDK was coded from scratch, core OTel/metrics concepts, and how to write new custom integrations step-by-step, see the [**SDK Build & Developer Instrumentation Guide**](file:///home/kaizen/workspace/professional/OTEL-SDK/docs/SDK_BUILD_AND_INSTRUMENTATION_GUIDE.md).
+
 ---
 
 ## Table of Contents
