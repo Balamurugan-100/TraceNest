@@ -272,6 +272,21 @@ class ProductViewSet(viewsets.ModelViewSet):
         cache.set(cache_key, serializer.data, timeout=300)
         return Response({"cache_hit": False, "source": "database", "products": serializer.data})
 
+    @action(detail=False, methods=["get"], url_path="redis-slow")
+    def redis_slow(self, request):
+        delay = float(request.query_params.get("delay", 1.0))
+        try:
+            from opentelemetry import trace
+            tracer = trace.get_tracer(__name__)
+            with tracer.start_as_current_span("KEYS * (SLOW)", kind=trace.SpanKind.CLIENT) as span:
+                span.set_attribute("db.system", "redis")
+                span.set_attribute("db.statement", f"KEYS * (SLOW {delay}s)")
+                time.sleep(delay)
+                cache.set("slow_key", "slow_val", timeout=60)
+        except Exception:
+            time.sleep(delay)
+        return Response({"status": "slow_redis_complete", "delay": delay})
+
     @action(detail=False, methods=["get"], url_path="external")
     def external_endpoint(self, request):
         from django.conf import settings
