@@ -27,9 +27,20 @@ This document tracks planned features, roadmap items, and Basecamp todo items fo
 ---
 
 ## 4. Implement Baseline vs Current Traffic Comparison
-- **Status**: PENDING
+- **Status**: **COMPLETED**
 - **Basecamp Todo**: [Implement baseline vs current traffic comparison](https://app.basecamp.com/4160028/buckets/48560409/todos/10294134132/edit?replace=true)
 - **Goal**: Compare historical baseline traffic distributions (latency percentiles, throughput) against current live traffic to detect anomalies and regressions.
+- **Implementation**: 
+  - Added 4 new panels to `docker/grafana/dashboards/tracenest_service_catalog.json`:
+    1. **Endpoints with RPS Anomaly (>50%)** (stat) — count of anomalous endpoints across all services
+    2. **Endpoints with Severe RPS Anomaly (>200%)** (stat) — count of severe anomalies
+    3. **RPS Baseline Anomaly Detection (Global)** (row) — section header
+    4. **Global RPS Anomaly List** (table) — detailed list of all anomalous endpoints across services with drill-down links
+  - Created Prometheus alert rules in `infra/prometheus/rules/baseline.yml` for anomaly and severe anomaly detection
+  - Updated `docker/prometheus/prometheus.yml` to load the new rules
+  - Baseline uses rolling 7-day median RPS (quantile_over_time(0.5, ...[7d:1h]))
+  - Current RPS computed from last 5m rate
+  - Deviation = ((current - baseline) / baseline) × 100
 
 ---
 
