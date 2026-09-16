@@ -1,0 +1,1980 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Tracenest APM \u2014 Dynamic catalog of installed & active components. Detects Django, PostgreSQL, Redis, and HTTP Client automatically from telemetry. Click any component to open its dashboard.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "Django Overview",
+      "type": "link",
+      "url": "/d/tracenest-django-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "Django Endpoint Details",
+      "type": "link",
+      "url": "/d/tracenest-django-endpoint"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "PostgreSQL Overview",
+      "type": "link",
+      "url": "/d/tracenest-postgres-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "Redis Overview",
+      "type": "link",
+      "url": "/d/tracenest-redis-overview"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "tracenest",
+    "apm",
+    "services",
+    "catalog",
+    "health"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, service_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": false,
+        "name": "service",
+        "options": [],
+        "query": "label_values(apm_calls_total, service_name)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "5m",
+          "value": "5m"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Anomaly Window",
+        "multi": false,
+        "name": "anomaly_window",
+        "options": [
+          {
+            "selected": false,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": false,
+            "text": "3m",
+            "value": "3m"
+          },
+          {
+            "selected": true,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "15m",
+            "value": "15m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "query": "1m,3m,5m,10m,15m,30m,1h",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "Tracenest \u2014 Instrumented Services & Tools Catalog",
+  "uid": "tracenest-service-catalog",
+  "version": 5,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "title": "Stack Telemetry Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total active services instrumented with Tracenest SDK",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#3b82f6",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(sum by (service_name) (rate(apm_calls_total{service_name=~\"$service\"}[5m]) > 0))",
+          "legendFormat": "Active Services",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Active Services",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total distinct active components/tools detected dynamically. Counts Django (web framework), PostgreSQL, Redis, and HTTP Client from span labels.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#8b5cf6",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(\n  (count(sum by (service_name) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]) > 0)) or vector(0))\n  + (count(sum by (service_name) (rate(apm_calls_total{db_system=\"postgresql\", service_name=~\"$service\"}[5m]) > 0)) or vector(0))\n  + (count(sum by (service_name) (rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[5m]) > 0)) or vector(0))\n  + (count(sum by (service_name) (rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[5m]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[5m]) > 0)) or vector(0))\n)",
+          "legendFormat": "Active Components",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Installed & Active Components",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total throughput across all active components",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps",
+          "noValue": "0 ops/s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(apm_calls_total{service_name=~\"$service\"}[$__range]))",
+          "legendFormat": "Total RPS",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Operations / sec",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Overall stack error rate across all components",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "#10b981",
+                  "text": "ALL TOOLS OK"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#10b981",
+                "value": null
+              },
+              {
+                "color": "#f59e0b",
+                "value": 1
+              },
+              {
+                "color": "#ef4444",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "percent",
+          "noValue": "0.00%"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_calls_total{service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum(rate(apm_calls_total{service_name=~\"$service\"}[$__range])) > 0 or vector(1))) * 100",
+          "legendFormat": "Error Rate %",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Stack Health Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Watchdog APM real-time anomaly detection. Evaluates trailing ${anomaly_window} traffic against 7-day median baseline to detect endpoint RPS surges exceeding +50%. Click to investigate in Watchdog section.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "title": "🔭 Investigate Anomaly in Watchdog Section",
+              "url": "/d/tracenest-service-catalog?var-service=${service}&${__url_time_range}#panel-401",
+              "targetBlank": false
+            }
+          ],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "#10b981",
+                  "text": "\u2705 All Systems Normal \u2014 0 Active Anomalies (All endpoints operating within baseline)"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "#10b981",
+                  "text": "\u2705 All Systems Normal \u2014 0 Active Anomalies"
+                }
+              }
+            }
+          ],
+          "noValue": "\u2705 All Systems Normal \u2014 0 Active Anomalies",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#10b981",
+                "value": null
+              },
+              {
+                "color": "#ef4444",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 99,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 20
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h]) > 0.001) * 100 > 50) or vector(0)",
+          "instant": true,
+          "legendFormat": "\u26a0\ufe0f Watchdog Anomaly Alert: Active Endpoint Traffic Surge Detected (>50% Baseline Deviation | Trailing ${anomaly_window}) \u2014 Click to Investigate",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Watchdog APM Anomaly Detection",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 200,
+      "title": "Installed Components Matrix",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dynamically detected components from telemetry. Shows only components with active traffic. Click a component name to open its dedicated dashboard.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Component"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "PgBouncer": {
+                        "color": "#ff8c00",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open ${__data.fields.Component} Dashboard",
+                    "url": "${__data.fields.Dashboard}?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Web Framework": {
+                        "color": "#10b981",
+                        "index": 0
+                      },
+                      "Database": {
+                        "color": "#8b5cf6",
+                        "index": 1
+                      },
+                      "Cache": {
+                        "color": "#ec4899",
+                        "index": 2
+                      },
+                      "HTTP Client": {
+                        "color": "#f59e0b",
+                        "index": 3
+                      },
+                      "Database (Slave)": {
+                        "color": "#a855f7",
+                        "index": 4
+                      },
+                      "Connection Pooler": {
+                        "color": "#ff8c00",
+                        "index": 5
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "reqps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error Rate %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "semi-dark-green",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-yellow",
+                      "value": 1
+                    },
+                    {
+                      "color": "semi-dark-red",
+                      "value": 5
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "P95 Latency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Calls"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dashboard Page"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Dashboard"
+              },
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "/d/tracenest-django-overview": {
+                        "color": "#3b82f6",
+                        "text": "Django Overview \u2192"
+                      },
+                      "/d/tracenest-postgres-overview": {
+                        "color": "#8b5cf6",
+                        "text": "PostgreSQL Overview \u2192"
+                      },
+                      "/d/tracenest-redis-overview": {
+                        "color": "#ec4899",
+                        "text": "Redis Overview \u2192"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open ${__data.fields.Component} Dashboard",
+                    "url": "${__value.raw}?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": [
+            "mean"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "RPS"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__range])), \"Component\", \"Django\", \"\", \"\"), \"Type\", \"Web Framework\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-django-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\"), \"Type\", \"Database\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL (default)\", \"\", \"\"), \"Type\", \"Database\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{server_address=\"pgbouncer\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{server_port=\"6432\", service_name=~\"$service\"}[$__range])), \"Component\", \"PgBouncer\", \"\", \"\"), \"Type\", \"Connection Pooler\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__range])), \"Component\", \"Redis\", \"\", \"\"), \"Type\", \"Cache\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-redis-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"Requests\", \"\", \"\"), \"Type\", \"HTTP Client\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-django-overview\", \"\", \"\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Throughput",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (Component, Error_Rate) (\n  (\n    label_replace(((sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__range])) > 0)) * 100, \"Component\", \"Django\", \"\", \"\"))\n  or\n  (\n    label_replace(((sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range])) > 0)) * 100, \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\"))\n  or\n  (\n    label_replace(((sum(rate(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum(rate(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])) > 0)) * 100, \"Component\", \"PostgreSQL (default)\", \"\", \"\"))\n  or\n  (\n    label_replace(((sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__range])) > 0)) * 100, \"Component\", \"Redis\", \"\", \"\"))\n  or\n  (\n    label_replace(((sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\", error=\"true\"}[$__range]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\", error=\"true\"}[$__range])) or vector(0)) / (sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])) > 0)) * 100, \"Component\", \"Requests\", \"\", \"\"))\n)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Error Rate",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (Component, P95_Latency) (\n  label_replace(histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", service_name=~\"$service\"}[$__range])) by (le)), \"Component\", \"Django\", \"\", \"\")\n  or\n  label_replace(histogram_quantile(0.95, sum by (le, db_instance) (rate(apm_duration_milliseconds_bucket{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range]))), \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\")\n  or\n  label_replace(histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])) by (le)), \"Component\", \"PostgreSQL (default)\", \"\", \"\")\n  or\n  label_replace(histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", service_name=~\"$service\"}[$__range])) by (le)), \"Component\", \"Redis\", \"\", \"\")\n  or\n  label_replace(histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{span_type=\"http\", service_name=~\"$service\"}[$__range]) or rate(apm_duration_milliseconds_bucket{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])) by (le)), \"Component\", \"Requests\", \"\", \"\")\n)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "P95 Latency",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (Component, Total_Calls) (\n  label_replace(sum(increase(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__range])), \"Component\", \"Django\", \"\", \"\")\n  or\n  label_replace(sum by (db_instance) (increase(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\")\n  or\n  label_replace(sum(increase(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL (default)\", \"\", \"\")\n  or\n  label_replace(sum(increase(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__range])), \"Component\", \"Redis\", \"\", \"\")\n  or\n  label_replace(sum(increase(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__range]) or increase(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"Requests\", \"\", \"\")\n)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Total Calls",
+          "range": false,
+          "refId": "D"
+        }
+      ],
+      "title": "Installed Components Matrix",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "Component",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "db_instance": true
+            },
+            "indexByName": {
+              "Component": 0,
+              "Type": 1,
+              "RPS": 2,
+              "Value #A": 2,
+              "Error Rate %": 3,
+              "Value #B": 3,
+              "P95 Latency": 4,
+              "Value #C": 4,
+              "Total Calls": 5,
+              "Value #D": 5,
+              "Dashboard": 6,
+              "Dashboard Page": 6
+            },
+            "renameByName": {
+              "Error_Rate": "Error Rate %",
+              "P95_Latency": "P95 Latency",
+              "Total_Calls": "Total Calls",
+              "Value #A": "RPS",
+              "Value #B": "Error Rate %",
+              "Value #C": "P95 Latency",
+              "Value #D": "Total Calls",
+              "Dashboard": "Dashboard Page"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 300,
+      "title": "Throughput & Traffic Breakdown Across Active Components",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Throughput trend for each active installed component. Click any series legend to open its dedicated dashboard.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "ops / sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(postgres|postgresql).*/i"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open PostgreSQL Overview",
+                    "url": "/d/tracenest-postgres-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*redis.*/i"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Redis Overview",
+                    "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*django.*/i"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Django Overview",
+                    "url": "/d/tracenest-django-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0",
+          "legendFormat": "Django (Web Framework)",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", service_name=~\"$service\"}[$__rate_interval])) > 0",
+          "legendFormat": "PostgreSQL ({{db_instance}})",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__rate_interval])) > 0",
+          "legendFormat": "Redis (Cache)",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__rate_interval]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__rate_interval])) > 0",
+          "legendFormat": "Requests (HTTP Client)",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Throughput Over Time (All Components)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Datadog-style execution breakdown (% of time spent): Shows the proportion of time spent in web framework handlers vs downstream services and inferred components (PostgreSQL, Redis, HTTP requests, Celery, etc.). Instantly pinpoints which component has an issue or bottleneck when there is a hike in RPS.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Percent",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 45,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*django.*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#3b82f6",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Django Overview",
+                    "url": "/d/tracenest-django-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(postgres|defaultdb|postgresql).*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#10b981",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open PostgreSQL Overview",
+                    "url": "/d/tracenest-postgres-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*redis.*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#ef4444",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Redis Overview",
+                    "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*s3.*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#d97706",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*pgbouncer.*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#8b4513",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(requests|http|celery).*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#f97316",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*fastapi.*/i"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#a855f7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", db_instance=~\"default|\", service_name=~\"$service\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "postgres",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", db_instance=\"slave1\", service_name=~\"$service\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "postgres (slave1)",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", db_instance=\"slave2\", service_name=~\"$service\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "postgres (slave2)",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", db_instance=\"slave3\", service_name=~\"$service\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "postgres (slave3)",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{db_system=\"redis\", service_name=~\"$service\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "redis",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{span_kind=\"SPAN_KIND_CLIENT\", http_method!=\"\", service_name=~\"$service\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "requests",
+          "range": true,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((sum(rate(apm_duration_milliseconds_sum{span_name=~\"S3.*\", service_name=~\"$service\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100",
+          "legendFormat": "s3",
+          "range": true,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) - (sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", service_name=~\"$service\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{db_system=\"redis\", service_name=~\"$service\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{span_kind=\"SPAN_KIND_CLIENT\", http_method!=\"\", service_name=~\"$service\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{span_name=~\"S3.*\", service_name=~\"$service\"}[$__rate_interval]) or vector(0)))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", service_name=~\"$service\"}[$__rate_interval])) > 0)) * 100, 0)",
+          "legendFormat": "django",
+          "range": true,
+          "refId": "H"
+        }
+      ],
+      "title": "% of Time Spent by Downstream Service and inferred",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 400,
+      "title": "RPS Baseline Anomaly Detection (Global)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total number of endpoints across all services where current RPS exceeds 7-day median by >50%.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#10b981",
+                "value": null
+              },
+              {
+                "color": "#f59e0b",
+                "value": 1
+              },
+              {
+                "color": "#ef4444",
+                "value": 5
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 36
+      },
+      "id": 401,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 50) or vector(0)",
+          "instant": true,
+          "legendFormat": "Anomalous Endpoints",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Endpoints with RPS Anomaly (>50%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Total number of endpoints across all services where current RPS exceeds 7-day median by >200%.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#10b981",
+                "value": null
+              },
+              {
+                "color": "#ef4444",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 36
+      },
+      "id": 402,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 200) or vector(0)",
+          "instant": true,
+          "legendFormat": "Severe Anomalies",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Endpoints with Severe RPS Anomaly (>200%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "All endpoints across all services where current RPS exceeds 7-day median by >50%. Click service to drill down.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              },
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Service Overview",
+                    "url": "/d/tracenest-django-overview?var-service=${__data.fields.service_name}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Service Overview",
+                    "url": "/d/tracenest-django-overview?var-service=${__data.fields.Service}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Endpoint"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Endpoint Details: ${__data.fields.Endpoint}",
+                    "url": "/d/tracenest-django-endpoint?var-endpoint=${__data.fields.Endpoint:percentencode}&var-http_method=${__data.fields.Method}&var-service=${service}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "http_route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Endpoint"
+              },
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open Endpoint Details: ${__data.fields.Endpoint}",
+                    "url": "/d/tracenest-django-endpoint?var-endpoint=${__data.fields.Endpoint:percentencode}&var-http_method=${__data.fields.Method}&var-service=${service}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "http_method"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Method"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Method"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current RPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "reqps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Baseline RPS"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "reqps"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Deviation %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "semi-dark-green",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-yellow",
+                      "value": 50
+                    },
+                    {
+                      "color": "semi-dark-red",
+                      "value": 200
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate Anomaly in Endpoint Details: ${__data.fields.Endpoint}",
+                    "url": "/d/tracenest-django-endpoint?var-endpoint=${__data.fields.Endpoint:percentencode}&var-http_method=${__data.fields.Method}&var-service=${__data.fields.Service}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 403,
+      "options": {
+        "enablePagination": true,
+        "showHeader": true,
+        "footer": {
+          "countRows": true,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "mean"
+          ],
+          "show": true
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Deviation %"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[$__range:1m]), \"endpoint_key\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Current RPS",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h]), \"endpoint_key\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Baseline RPS",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h]) > 0.001) * 100, \"endpoint_key\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Deviation %",
+          "range": false,
+          "refId": "C"
+        }
+      ],
+      "title": "Global RPS Anomaly List \u2014 All Services (Baseline vs Current + % Change)",
+      "type": "table",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "endpoint_key",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "greater",
+                  "options": {
+                    "value": 50
+                  }
+                },
+                "fieldName": "Value #C",
+                "type": "include"
+              }
+            ],
+            "match": "all",
+            "type": "include"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "endpoint_key": true,
+              "endpoint_key 1": true,
+              "endpoint_key 2": true,
+              "http_method 1": true,
+              "http_method 2": true,
+              "http_route 1": true,
+              "http_route 2": true,
+              "service_name 1": true,
+              "service_name 2": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "http_route": 1,
+              "http_method": 2,
+              "Value #A": 3,
+              "Value #B": 4,
+              "Value #C": 5
+            },
+            "renameByName": {
+              "Value #A": "Current RPS",
+              "Value #B": "Baseline RPS",
+              "Value #C": "Deviation %",
+              "http_method": "Method",
+              "http_route": "Endpoint",
+              "service_name": "Service"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
