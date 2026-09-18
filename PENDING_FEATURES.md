@@ -45,6 +45,6 @@ This document tracks planned features, roadmap items, and Basecamp todo items fo
 ---
 
 ## 5. Evaluate Service-Level Flamegraphs
-- **Status**: PENDING
+- **Status**: COMPLETED
 - **Basecamp Todo**: [Evaluate service-level flamegraphs](https://app.basecamp.com/4160028/buckets/48560409/todos/10294134145/edit?replace=true)
 - **Goal**: Profile function call trees and wall-time execution to generate flamegraphs for service-level performance diagnostics.

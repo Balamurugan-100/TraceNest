@@ -21,26 +21,43 @@ class RedisIntegration(BaseIntegration):
             return False
 
     def _apply_patch(self) -> None:
-        try:
-            from opentelemetry.instrumentation.redis import RedisInstrumentor
+        from .client import (
+            traced_redis_execute_command,
+            traced_pipeline_execute,
+            traced_async_redis_execute_command,
+            traced_async_pipeline_execute,
+        )
 
-            instrumentor = RedisInstrumentor()
-            if not instrumentor.is_instrumented_by_opentelemetry:
-                instrumentor.instrument()
-            self._is_patched = True
+        patched_any = False
+
+        # 1. Sync Redis client & pipeline
+        try:
+            import redis
+
+            self.wrap("redis.Redis", "execute_command", traced_redis_execute_command)
+            if hasattr(redis, "StrictRedis") and redis.StrictRedis is not redis.Redis:
+                self.wrap("redis.StrictRedis", "execute_command", traced_redis_execute_command)
+            self.wrap("redis.client.Pipeline", "execute", traced_pipeline_execute)
+            patched_any = True
         except Exception as exc:
-            logger.debug("RedisInstrumentor patch skipped: %s", exc)
+            logger.debug("Redis sync patch skipped: %s", exc)
+
+        # 2. Async Redis client & pipeline
+        try:
+            import redis.asyncio
+
+            self.wrap("redis.asyncio.Redis", "execute_command", traced_async_redis_execute_command)
+            if hasattr(redis.asyncio, "StrictRedis") and redis.asyncio.StrictRedis is not redis.asyncio.Redis:
+                self.wrap("redis.asyncio.StrictRedis", "execute_command", traced_async_redis_execute_command)
+            self.wrap("redis.asyncio.client.Pipeline", "execute", traced_async_pipeline_execute)
+            patched_any = True
+        except Exception as exc:
+            logger.debug("Redis async patch skipped: %s", exc)
+
+        self._is_patched = patched_any
 
     def uninstrument(self) -> bool:
-        try:
-            from opentelemetry.instrumentation.redis import RedisInstrumentor
-
-            instrumentor = RedisInstrumentor()
-            if instrumentor.is_instrumented_by_opentelemetry:
-                instrumentor.uninstrument()
-            self._is_patched = False
-            return True
-        except Exception as exc:
-            logger.debug("Failed to uninstrument redis: %s", exc)
-            return False
+        self.unwrap_all()
+        self._is_patched = False
+        return True
 
