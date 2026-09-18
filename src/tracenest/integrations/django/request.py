@@ -12,6 +12,7 @@ from opentelemetry.propagate import extract
 from tracenest.config import SDKConfig
 from tracenest.sanitize import sanitize_url
 from tracenest.tracing import reentrant_guard
+from tracenest.route_context import reset_request_route, set_request_route
 import tracenest
 
 logger = logging.getLogger("tracenest.integrations.django")
@@ -102,6 +103,30 @@ def _normalize_route(request, fallback_path: str) -> str:
     if route_str and not route_str.startswith("/"):
         route_str = f"/{route_str}"
     return route_str
+
+
+def _preresolve_route(path: str) -> str:
+    """Best-effort normalized route resolved BEFORE the handler runs.
+
+    Child spans (DB, cache, outgoing HTTP, S3) end before the SERVER span
+    learns its route from ``resolver_match``; they read the route published
+    from here via context vars instead. Falls back to the raw path when the
+    URLconf cannot resolve it (unmatched URL, Django not fully set up).
+    """
+    fallback = path if path.startswith("/") else f"/{path}"
+    try:
+        from django.urls import resolve
+
+        match = resolve(path)
+        route = getattr(match, "route", None) or getattr(match, "url_name", None) or path
+        route_str = str(route)
+        if "^" in route_str or "(?P<" in route_str or "\\" in route_str or "$" in route_str:
+            route_str = _clean_regex_pattern(route_str)
+        if route_str and not route_str.startswith("/"):
+            route_str = f"/{route_str}"
+        return route_str
+    except Exception:
+        return fallback
 
 
 def _resolve_view_name(request, method: str) -> str:
@@ -214,6 +239,11 @@ def traced_get_response(wrapped, instance, args, kwargs):
 
         start = time.monotonic()
 
+        # Publish the pre-resolved route so child spans started inside the
+        # handler carry http.route even though resolver_match is only
+        # populated after the handler returns.
+        route_token = set_request_route(_preresolve_route(path), method)
+
         with tracer.start_as_current_span(
             "django.request",
             context=parent_ctx,
@@ -315,3 +345,4 @@ def traced_get_response(wrapped, instance, args, kwargs):
             finally:
                 duration_ms = (time.monotonic() - start) * 1000.0
                 span.set_attribute("http.request.duration_ms", duration_ms)
+                reset_request_route(route_token)

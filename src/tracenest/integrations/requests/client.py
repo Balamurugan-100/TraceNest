@@ -8,6 +8,7 @@ from opentelemetry.trace import StatusCode
 
 from tracenest.config import SDKConfig
 from tracenest.sanitize import sanitize_url
+from tracenest.route_context import get_current_route
 import tracenest
 
 logger = logging.getLogger("tracenest.integrations.requests")
@@ -103,6 +104,15 @@ def tracenest_request_hook(span: Any, request: Any) -> None:
     span.set_attribute("net.peer.port", port)
     span.set_attribute("peer.service", peer_service)
     span.set_attribute("resource.name", f"{method} {clean_target}")
+
+    # Tag the outgoing call with the in-flight Django endpoint so
+    # per-endpoint spanmetrics series (http_route label) include it.
+    try:
+        route = get_current_route()
+        if route:
+            span.set_attribute("http.route", route)
+    except Exception:
+        pass
 
     if hasattr(span, "update_name"):
         try:

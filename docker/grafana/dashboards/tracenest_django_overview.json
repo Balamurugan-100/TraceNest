@@ -15,7 +15,7 @@
       "targetBlank": false,
       "title": "\u2190 Back to Project Catalog",
       "type": "link",
-      "url": "/d/tracenest-project-catalog?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-project-catalog"
     },
     {
       "asDropdown": false,
@@ -25,7 +25,7 @@
       "targetBlank": false,
       "title": "PostgreSQL Overview",
       "type": "link",
-      "url": "/d/tracenest-postgres-overview?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-postgres-overview"
     },
     {
       "asDropdown": false,
@@ -35,7 +35,7 @@
       "targetBlank": false,
       "title": "Redis Overview",
       "type": "link",
-      "url": "/d/tracenest-redis-overview?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-redis-overview"
     }
   ],
   "refresh": "5s",
@@ -50,7 +50,7 @@
   "templating": {
     "list": [
       {
-        "allValue": ".*",
+        "allValue": null,
         "current": {
           "selected": true,
           "text": [
@@ -70,18 +70,24 @@
         "label": "Cluster",
         "multi": true,
         "name": "cluster",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
         "query": {
           "query": "label_values(apm_calls_total, cluster_name)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": null,
         "current": {
           "selected": true,
           "text": "All",
@@ -97,14 +103,54 @@
         "label": "Project",
         "multi": false,
         "name": "project",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
         "query": "label_values(apm_calls_total{span_name=\"django.request\"}, project_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, server_location)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Location",
+        "multi": true,
+        "name": "server_location",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, server_location)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
         "current": {
           "selected": true,
           "text": "All",
@@ -120,7 +166,13 @@
         "label": "HTTP Method",
         "multi": false,
         "name": "http_method",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
         "query": "label_values(apm_calls_total{span_name=\"django.request\"}, http_method)",
         "refresh": 2,
         "sort": 1,
@@ -178,6 +230,40 @@
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, team)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Team",
+        "multi": true,
+        "name": "team",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, team)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
       }
     ]
   },
@@ -680,7 +766,7 @@
                 "value": [
                   {
                     "title": "Open Endpoint Details: ${__data.fields.Endpoint}",
-                    "url": "/d/tracenest-django-endpoint?var-endpoint=${__data.fields.Endpoint:percentencode}&var-http_method=${__data.fields.Method}&var-project=${project}&var-cluster=${cluster}&${__url_time_range}"
+                    "url": "/d/tracenest-django-endpoint?var-endpoint=${__data.fields.Endpoint:percentencode}&var-http_method=${__data.fields.Method}&${project:queryparam}&${cluster:queryparam}&${server_location:queryparam}&${__url_time_range}"
                   }
                 ]
               }

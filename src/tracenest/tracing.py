@@ -5,6 +5,30 @@ from typing import Any, Dict, Iterator, Optional
 
 from opentelemetry.trace import Context, Span, SpanKind, StatusCode, get_tracer
 
+from tracenest.route_context import get_current_method, get_current_route
+
+
+def _with_request_route(attributes: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Merge the in-flight Django request route/method into span attributes.
+
+    Lets per-endpoint spanmetrics series (``http_route`` label) be emitted
+    for child spans even though the SERVER span only learns its normalized
+    route after the handler returns. Never overwrites explicit attributes.
+    """
+    route = get_current_route()
+    method = get_current_method()
+    if not route and not method:
+        return attributes
+    attrs = dict(attributes) if attributes else {}
+    if route and "http.route" not in attrs:
+        attrs["http.route"] = route
+    if method:
+        if "http.request.method" not in attrs:
+            attrs["http.request.method"] = method
+        if "http.method" not in attrs:
+            attrs["http.method"] = method
+    return attrs
+
 
 @contextlib.contextmanager
 def traced_span(
@@ -27,7 +51,7 @@ def traced_span(
     with tracer.start_as_current_span(
         name,
         kind=kind,
-        attributes=attributes,
+        attributes=_with_request_route(attributes),
         context=context,
     ) as span:
         try:

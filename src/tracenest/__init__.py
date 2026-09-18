@@ -26,6 +26,7 @@ from opentelemetry.propagate import set_global_textmap
 
 from tracenest.config import SDKConfig
 from tracenest.exporter import SafeSpanExporter
+from tracenest.route_context import RouteEnrichingSpanProcessor
 from tracenest.integrations import BaseIntegration, get_integration_manager
 from tracenest.sanitize import sanitize_sql, sanitize_url
 from tracenest.version import __version__
@@ -119,6 +120,8 @@ def init(
             "telemetry.sdk.version": __version__,
         }
         resource_data["deployment.environment"] = config.environment
+        if config.tags:
+            resource_data.update(config.tags)
         if config.resource_attributes:
             resource_data.update(config.resource_attributes)
         try:
@@ -141,6 +144,19 @@ def init(
 
         # Create TracerProvider
         provider = TracerProvider(resource=resource, sampler=sampler)
+
+        # Enrich spans with the in-flight Django http.route and global tags
+        static_span_attrs = {
+            "project_name": config.project_name,
+            "cluster_name": config.cluster_name,
+        }
+        if config.tags:
+            static_span_attrs.update(config.tags)
+
+        try:
+            provider.add_span_processor(RouteEnrichingSpanProcessor(static_attributes=static_span_attrs))
+        except Exception as exc:
+            logger.debug("TraceNest: Failed to register RouteEnrichingSpanProcessor: %s", exc)
 
         # Configure Exporter and Processor if not disabled
         if not config.disabled:

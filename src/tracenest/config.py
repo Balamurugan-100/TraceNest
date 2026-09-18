@@ -64,7 +64,6 @@ class SDKConfig:
 
     project_name: str = "unknown-project"
     cluster_name: Optional[str] = None
-    cluster_name: Optional[str] = None
     environment: str = "development"
     version: str = "0.1.0"
     endpoint: str = "http://localhost:4318"
@@ -91,6 +90,7 @@ class SDKConfig:
         project: Optional[str] = None,
         project_name: Optional[str] = None,
         cluster_name: Optional[str] = None,
+        tags: Optional[Dict[str, Any]] = None,
         environment: Optional[str] = None,
         version: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -105,31 +105,25 @@ class SDKConfig:
     ) -> "SDKConfig":
         """Build SDKConfig by prioritizing explicit kwargs over environment variables."""
 
-        # 1. Service name (auto-detect from Django settings if available)
+        # 1. Project Name (auto-detect from Django settings if available)
         resolved_project = (
-            project
-            or project_name
+            project_name
+            or project
             or os.getenv("TRACENEST_PROJECT_NAME")
             or os.getenv("TRACENEST_PROJECT")
             or os.getenv("OTEL_PROJECT_NAME")
+            or os.getenv("OTEL_SERVICE_NAME")
             or os.getenv("TP_OBS_PROJECT_NAME")
             or _detect_django_project_name()
             or "unknown-project"
         )
 
-        
+        # 2. Cluster Name
         resolved_cluster = (
             cluster_name
             or os.getenv("TRACENEST_CLUSTER_NAME")
             or os.getenv("TRACENEST_CLUSTER")
-            or "unknown-cluster"
-        )
-
-        
-        resolved_cluster = (
-            cluster_name
-            or os.getenv("TRACENEST_CLUSTER_NAME")
-            or os.getenv("TRACENEST_CLUSTER")
+            or os.getenv("OTEL_CLUSTER_NAME")
             or "unknown-cluster"
         )
 
@@ -266,20 +260,32 @@ class SDKConfig:
             default=False,
         )
 
-        # 12. Static tags (applied to all spans)
-        # Kwargs tags override env vars entirely (consistent with other settings)
-        kwarg_tags = extra.get("tags")
+        # 12. Static tags / key-value metadata (applied to all spans and resources)
+        # Explicit kwargs tags override env vars entirely (consistent with other settings)
+        kwarg_tags = tags if tags is not None else extra.get("tags")
         if kwarg_tags is not None:
             resolved_tags = dict(kwarg_tags)
         else:
             resolved_tags = {}
-            env_tags_str = os.getenv("TRACENEST_TAGS") or os.getenv("TP_OBS_TAGS")
+            env_tags_str = os.getenv("TRACENEST_TAGS") or os.getenv("TP_OBS_TAGS") or os.getenv("OTEL_RESOURCE_ATTRIBUTES")
             if env_tags_str:
                 for item in env_tags_str.split(","):
                     item = item.strip()
                     if "=" in item:
                         k, v = item.split("=", 1)
                         resolved_tags[k.strip()] = v.strip()
+
+        # Merge custom arbitrary extra kwargs (e.g. server_location="us-east-1", team="core")
+        KNOWN_EXTRA_KEYS = {
+            "trace_nested_templates", "template_instrumentation", "TEMPLATE_INSTRUMENTATION",
+            "template_enabled", "template_exclude", "db_two_tier_spans", "tags",
+            "on_request_span", "ignore_endpoints", "IGNORE_ENDPOINTS",
+            "endpoint_sample_rules", "endpoint_rules", "sample_rules", "ENDPOINT_SAMPLE_RULES",
+            "sample_errors", "service", "service_name", "cluster"
+        }
+        for k, v in extra.items():
+            if k not in KNOWN_EXTRA_KEYS and not k.startswith("_"):
+                resolved_tags[k] = v
 
         # 13. Per-request span callback
         resolved_on_request_span = extra.get("on_request_span")

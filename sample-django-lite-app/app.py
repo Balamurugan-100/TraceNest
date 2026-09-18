@@ -16,8 +16,16 @@ import tracenest
 
 # 1. Initialize TraceNest SDK (auto_patch=True is the default)
 tracenest.init(
-    service=os.getenv("OTEL_SERVICE_NAME", "django-lite-app"),
-    environment=os.getenv("OTEL_ENVIRONMENT", "production"),
+    project_name=os.getenv("TRACENEST_PROJECT_NAME", "django-lite-app"),
+    cluster_name=os.getenv("TRACENEST_CLUSTER_NAME", "done"),
+    tags={
+        "server_location": "ap-south-1",
+        "team": "frontend-api",
+        "cluster_name": "cluset1",
+        "test_1": 1111,
+        
+    },
+    environment=os.getenv("TRACENEST_ENVIRONMENT", "production"),
     endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://tp-otel-collector:4318"),
 )
 

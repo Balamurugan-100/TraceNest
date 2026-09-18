@@ -30,7 +30,13 @@ def setup_telemetry():
         #   TRACENEST_ENDPOINT / OTEL_EXPORTER_OTLP_ENDPOINT
         # Or auto-detected from Django settings if configured there.
         tracenest.init(
-            service_name="otel-sample",
+            project_name="otel-sample",
+            cluster_name="Dummy",
+            tags={
+                "server_location": "us-east-1",
+                "team": "core-backend",
+                "test": "HEHE"
+            },
             sample_rate=0.1,
             ignore_endpoints=["/api/products/health/"],
             endpoint_sample_rules={

@@ -15,7 +15,7 @@
       "targetBlank": false,
       "title": "\u2190 Back to Redis Overview",
       "type": "link",
-      "url": "/d/tracenest-redis-overview?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-redis-overview"
     },
     {
       "asDropdown": false,
@@ -25,7 +25,7 @@
       "targetBlank": false,
       "title": "\u2190 Project Catalog",
       "type": "link",
-      "url": "/d/tracenest-project-catalog?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-project-catalog"
     },
     {
       "asDropdown": false,
@@ -35,7 +35,7 @@
       "targetBlank": false,
       "title": "Django Overview",
       "type": "link",
-      "url": "/d/tracenest-django-overview?var-project=$project&${__url_time_range}"
+      "url": "/d/tracenest-django-overview"
     }
   ],
   "refresh": "5s",
@@ -51,7 +51,7 @@
   "templating": {
     "list": [
       {
-        "allValue": ".*",
+        "allValue": null,
         "current": {
           "selected": true,
           "text": [
@@ -71,18 +71,24 @@
         "label": "Cluster",
         "multi": true,
         "name": "cluster",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
         "query": {
           "query": "label_values(apm_calls_total, cluster_name)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": null,
         "current": {
           "selected": true,
           "text": "All",
@@ -98,14 +104,54 @@
         "label": "Project",
         "multi": false,
         "name": "project",
-        "options": [],
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
         "query": "label_values(apm_calls_total{db_system=\"redis\"}, project_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, server_location)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Location",
+        "multi": true,
+        "name": "server_location",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, server_location)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
         "current": {
           "selected": true,
           "text": "All",
@@ -124,6 +170,40 @@
         "options": [],
         "query": "label_values(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, db_operation)",
         "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, team)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Team",
+        "multi": true,
+        "name": "team",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, team)",
+        "refresh": 2,
+        "regex": "",
         "sort": 1,
         "type": "query"
       }

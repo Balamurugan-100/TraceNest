@@ -193,8 +193,8 @@ services:
       - ./sample-django-lite-app/app.py:/app/app.py
       - ./src:/app/src
     environment:
-      - OTEL_SERVICE_NAME=django-lite-app
-      - OTEL_ENVIRONMENT=production
+      - TRACENEST_PROJECT_NAME=django-lite-app
+      - TRACENEST_ENVIRONMENT=production
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://tp-otel-collector:4318
     networks:
       - default
