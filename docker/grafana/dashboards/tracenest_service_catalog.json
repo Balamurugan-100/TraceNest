@@ -153,7 +153,7 @@
   "timezone": "browser",
   "title": "Tracenest \u2014 Instrumented Services & Tools Catalog",
   "uid": "tracenest-service-catalog",
-  "version": 6,
+  "version": 7,
   "panels": [
     {
       "collapsed": false,
@@ -461,15 +461,6 @@
           ],
           "mappings": [
             {
-              "type": "value",
-              "options": {
-                "0": {
-                  "color": "#10b981",
-                  "text": "\u2705 All Systems Normal \u2014 0 Active Anomalies (All endpoints operating within baseline)"
-                }
-              }
-            },
-            {
               "type": "special",
               "options": {
                 "match": "null+nan",
@@ -478,9 +469,28 @@
                   "text": "\u2705 All Systems Normal \u2014 0 Active Anomalies"
                 }
               }
+            },
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
             }
           ],
-          "noValue": "\u2705 All Systems Normal \u2014 0 Active Anomalies",
+          "noValue": " ",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -531,15 +541,16 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h]) > 0.001) * 100 > 50) or vector(0)",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$anomaly_window]))[7d:1h]) > 0.001) * 100 > 50)",
           "instant": true,
           "legendFormat": "\u26a0\ufe0f Watchdog Anomaly Alert: Active Endpoint Traffic Surge Detected (>50% Baseline Deviation | Trailing ${anomaly_window}) \u2014 Click to Investigate",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "Watchdog APM Anomaly Detection",
-      "type": "stat"
+      "title": "",
+      "type": "stat",
+      "transparent": true
     },
     {
       "collapsed": false,
@@ -1474,7 +1485,27 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1492,7 +1523,7 @@
               }
             ]
           },
-          "noValue": "0"
+          "noValue": " "
         },
         "overrides": []
       },
@@ -1525,15 +1556,16 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 50) or vector(0)",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 50)",
           "instant": true,
           "legendFormat": "Anomalous Endpoints",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "Endpoints with RPS Anomaly (>50%)",
-      "type": "stat"
+      "title": "",
+      "type": "stat",
+      "transparent": true
     },
     {
       "datasource": {
@@ -1546,7 +1578,27 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "transparent",
+                  "text": " "
+                }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1560,7 +1612,7 @@
               }
             ]
           },
-          "noValue": "0"
+          "noValue": " "
         },
         "overrides": []
       },
@@ -1593,15 +1645,16 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 200) or vector(0)",
+          "expr": "count(((max_over_time(sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (service_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[5m]))[7d:1h]) > 0.001) * 100 > 200)",
           "instant": true,
           "legendFormat": "Severe Anomalies",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "Endpoints with Severe RPS Anomaly (>200%)",
-      "type": "stat"
+      "title": "",
+      "type": "stat",
+      "transparent": true
     },
     {
       "datasource": {
