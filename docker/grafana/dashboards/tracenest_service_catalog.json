@@ -153,7 +153,7 @@
   "timezone": "browser",
   "title": "Tracenest \u2014 Instrumented Services & Tools Catalog",
   "uid": "tracenest-service-catalog",
-  "version": 5,
+  "version": 6,
   "panels": [
     {
       "collapsed": false,
@@ -454,7 +454,7 @@
           },
           "links": [
             {
-              "title": "🔭 Investigate Anomaly in Watchdog Section",
+              "title": "\ud83d\udd2d Investigate Anomaly in Watchdog Section",
               "url": "/d/tracenest-service-catalog?var-service=${service}&${__url_time_range}#panel-401",
               "targetBlank": false
             }
@@ -858,7 +858,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "label_replace(label_replace(label_replace(sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__range])), \"Component\", \"Django\", \"\", \"\"), \"Type\", \"Web Framework\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-django-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\"), \"Type\", \"Database\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL (default)\", \"\", \"\"), \"Type\", \"Database\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{server_address=\"pgbouncer\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{server_port=\"6432\", service_name=~\"$service\"}[$__range])), \"Component\", \"PgBouncer\", \"\", \"\"), \"Type\", \"Connection Pooler\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-postgres-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__range])), \"Component\", \"Redis\", \"\", \"\"), \"Type\", \"Cache\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-redis-overview\", \"\", \"\")\nor\nlabel_replace(label_replace(label_replace(sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"Requests\", \"\", \"\"), \"Type\", \"HTTP Client\", \"\", \"\"), \"Dashboard\", \"/d/tracenest-django-overview\", \"\", \"\")",
+          "expr": "label_replace(label_replace(sum(rate(apm_calls_total{span_name=\"django.request\", service_name=~\"$service\"}[$__range])), \"Component\", \"Django\", \"\", \"\"), \"Type\", \"Web Framework\", \"\", \"\")\nor\nlabel_replace(label_replace(sum by (db_instance) (rate(apm_calls_total{db_system=\"postgresql\", db_instance!=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL ($1)\", \"db_instance\", \"(.*)\"), \"Type\", \"Database\", \"\", \"\")\nor\nlabel_replace(label_replace(sum(rate(apm_calls_total{db_system=\"postgresql\", db_instance=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"PostgreSQL (default)\", \"\", \"\"), \"Type\", \"Database\", \"\", \"\")\nor\nlabel_replace(label_replace(sum(rate(apm_calls_total{server_address=\"pgbouncer\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{server_port=\"6432\", service_name=~\"$service\"}[$__range])), \"Component\", \"PgBouncer\", \"\", \"\"), \"Type\", \"Connection Pooler\", \"\", \"\")\nor\nlabel_replace(label_replace(sum(rate(apm_calls_total{db_system=\"redis\", service_name=~\"$service\"}[$__range])), \"Component\", \"Redis\", \"\", \"\"), \"Type\", \"Cache\", \"\", \"\")\nor\nlabel_replace(label_replace(sum(rate(apm_calls_total{span_type=\"http\", service_name=~\"$service\"}[$__range]) or rate(apm_calls_total{http_method!=\"\", span_name!=\"django.request\", db_system=\"\", service_name=~\"$service\"}[$__range])), \"Component\", \"Requests\", \"\", \"\"), \"Type\", \"HTTP Client\", \"\", \"\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Throughput",
@@ -935,7 +935,6 @@
               "Value #C": 4,
               "Total Calls": 5,
               "Value #D": 5,
-              "Dashboard": 6,
               "Dashboard Page": 6
             },
             "renameByName": {

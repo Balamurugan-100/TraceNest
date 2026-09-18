@@ -38,7 +38,7 @@
       "url": "/d/tracenest-django-overview?var-service=$service&${__url_time_range}"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -113,7 +113,7 @@
   "timezone": "browser",
   "title": "PostgreSQL \u2014 Query Details",
   "uid": "tracenest-postgres-query",
-  "version": 1,
+  "version": 2,
   "panels": [
     {
       "collapsed": false,
@@ -886,7 +886,7 @@
             "uid": "tempo"
           },
           "limit": 30,
-          "query": "{ span.db.system = \"postgresql\" } | select(span.db.statement, span.db.operation, duration, status)",
+          "query": "{ span.db.system = \"postgresql\" && span.db.statement =~ `${query:regex}` } | select(span.db.statement, span.db.operation, duration, status)",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"

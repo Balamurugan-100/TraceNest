@@ -38,7 +38,7 @@
       "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -113,7 +113,7 @@
   "timezone": "browser",
   "title": "PostgreSQL \u2014 Database Overview",
   "uid": "tracenest-postgres-overview",
-  "version": 1,
+  "version": 2,
   "panels": [
     {
       "collapsed": false,
@@ -720,7 +720,7 @@
                 "value": [
                   {
                     "title": "Open Query Traces: ${__data.fields.Query}",
-                    "url": "/d/tracenest-postgres-query?var-query=${__data.fields.Query:percentencode}&var-service=${service}&${__url_time_range}"
+                    "url": "/d/tracenest-postgres-query?var-query=${__value.raw:percentencode}&var-service=${service}&${__url_time_range}"
                   }
                 ]
               }

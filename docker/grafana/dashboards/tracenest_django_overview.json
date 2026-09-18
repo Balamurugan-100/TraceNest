@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM — Operational overview for Django services: Golden signal KPIs, trends, interactive endpoint routing table, and backend dependency monitoring.",
+  "description": "Tracenest APM \u2014 Operational overview for Django services: Golden signal KPIs, trends, interactive endpoint routing table, and backend dependency monitoring.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "← Back to Service Catalog",
+      "title": "\u2190 Back to Service Catalog",
       "type": "link",
       "url": "/d/tracenest-service-catalog?var-service=$service&${__url_time_range}"
     },
@@ -38,7 +38,7 @@
       "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -163,9 +163,9 @@
     ]
   },
   "timezone": "browser",
-  "title": "Django — Service Overview",
+  "title": "Django \u2014 Service Overview",
   "uid": "tracenest-django-overview",
-  "version": 4,
+  "version": 5,
   "panels": [
     {
       "datasource": {

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM — Deep-dive endpoint performance, error breakdown, latency percentiles, downstream dependencies, and distributed flamegraph.",
+  "description": "Tracenest APM \u2014 Deep-dive endpoint performance, error breakdown, latency percentiles, downstream dependencies, and distributed flamegraph.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "← Back to Django Overview",
+      "title": "\u2190 Back to Django Overview",
       "type": "link",
       "url": "/d/tracenest-django-overview?var-service=$service&var-http_method=$http_method&${__url_time_range}"
     },
@@ -23,7 +23,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "← Service Catalog",
+      "title": "\u2190 Service Catalog",
       "type": "link",
       "url": "/d/tracenest-service-catalog?var-service=$service&${__url_time_range}"
     },
@@ -48,7 +48,7 @@
       "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -144,9 +144,9 @@
     ]
   },
   "timezone": "browser",
-  "title": "Django — Endpoint Details",
+  "title": "Django \u2014 Endpoint Details",
   "uid": "tracenest-django-endpoint",
-  "version": 4,
+  "version": 5,
   "panels": [
     {
       "collapsed": false,
@@ -761,7 +761,6 @@
       "title": "Latency",
       "type": "timeseries"
     },
-
     {
       "datasource": {
         "type": "prometheus",
@@ -1040,7 +1039,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "🔥 Open Flamegraph Waterfall in Tempo",
+                    "title": "\ud83d\udd25 Open Flamegraph Waterfall in Tempo",
                     "url": "/explore?schemaVersion=1&panes=%7B%22p%22:%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22query%22:%22${__value.raw}%22,%22queryType%22:%22traceql%22,%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22tempo%22%7D,%22limit%22:20,%22tableType%22:%22traces%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D%7D&orgId=1"
                   }
                 ]

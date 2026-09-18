@@ -38,7 +38,7 @@
       "url": "/d/tracenest-django-overview?var-service=$service&${__url_time_range}"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -113,7 +113,7 @@
   "timezone": "browser",
   "title": "Redis \u2014 Command Details",
   "uid": "tracenest-redis-command",
-  "version": 1,
+  "version": 2,
   "panels": [
     {
       "collapsed": false,
