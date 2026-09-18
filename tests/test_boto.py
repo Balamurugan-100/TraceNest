@@ -39,7 +39,7 @@ def test_boto_integration_instrument_lifecycle():
     """Verify BotoIntegration instrument and uninstrument calls."""
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="boto-test-service",
+        project_name="boto-test-service",
         exporter=exporter,
         export_batch=False,
     )

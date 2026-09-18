@@ -57,7 +57,7 @@ def test_endpoint_sample_rules_custom_ratios():
 def test_config_resolves_sampling_kwargs_and_env(monkeypatch):
     """Verify SDKConfig properly resolves ignore_endpoints, endpoint_sample_rules, and sample_errors."""
     cfg = SDKConfig.from_env_and_kwargs(
-        service="test-service",
+        project_name="test-service",
         sample_rate=0.1,
         ignore_endpoints=["/ping", "/readyz"],
         endpoint_sample_rules={"/api/vip/*": 1.0},

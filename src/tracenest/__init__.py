@@ -39,8 +39,9 @@ _ACTIVE_CONFIG: Optional[SDKConfig] = None
 
 
 def init(
-    service: Optional[str] = None,
-    service_name: Optional[str] = None,
+    project: Optional[str] = None,
+    project_name: Optional[str] = None,
+    cluster_name: Optional[str] = None,
     environment: Optional[str] = None,
     version: Optional[str] = None,
     endpoint: Optional[str] = None,
@@ -68,9 +69,9 @@ def init(
     A single call in your Django settings.py is all you need:
 
         import tracenest
-        tracenest.init(service="my-service")
+        tracenest.init(project_name="my-service")
 
-    The service name is auto-detected from Django settings if not provided.
+    The project name is auto-detected from Django settings if not provided.
     The OTLP endpoint defaults to OTEL_EXPORTER_OTLP_ENDPOINT env var,
     then http://localhost:4318.
 
@@ -85,8 +86,9 @@ def init(
             return _ACTIVE_PROVIDER
 
         config = SDKConfig.from_env_and_kwargs(
-            service=service,
-            service_name=service_name,
+            project=project,
+        cluster_name=cluster_name,
+            project_name=project_name,
             environment=environment,
             version=version,
             endpoint=endpoint,
@@ -107,7 +109,9 @@ def init(
 
         # Build Resource attributes
         resource_data = {
-            "service.name": config.service_name,
+            "service.name": config.project_name,
+            "project_name": config.project_name,
+            "cluster_name": config.cluster_name,
             "deployment.environment.name": config.environment,
             "service.version": config.version,
             "telemetry.sdk.name": "tracenest",
@@ -197,7 +201,7 @@ def init(
 
         logger.info(
             "TraceNest initialized successfully (service=%s, env=%s, endpoint=%s)",
-            config.service_name,
+            config.project_name,
             config.environment,
             config.endpoint,
         )

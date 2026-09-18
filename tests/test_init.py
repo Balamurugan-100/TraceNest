@@ -23,7 +23,7 @@ def test_init_creates_tracer_provider():
     """Verify init() sets up TracerProvider with correct Resource attributes."""
     exporter = InMemorySpanExporter()
     provider = tracenest.init(
-        service="test-service",
+        project_name="test-service",
         environment="staging",
         version="1.2.3",
         resource_attributes={"custom.tag": "value123"},
@@ -45,14 +45,14 @@ def test_init_creates_tracer_provider():
 
 def test_init_idempotency():
     """Verify that calling init() multiple times returns the same provider."""
-    provider1 = tracenest.init(service="first-service")
-    provider2 = tracenest.init(service="second-service")
+    provider1 = tracenest.init(project_name="first-service")
+    provider2 = tracenest.init(project_name="second-service")
     assert provider1 is provider2
 
 
 def test_config_from_env_and_kwargs(monkeypatch):
     """Verify SDKConfig properly resolves env vars and kwargs overrides."""
-    monkeypatch.setenv("OTEL_SERVICE_NAME", "env-service")
+    monkeypatch.setenv("OTEL_PROJECT_NAME", "env-service")
     monkeypatch.setenv("OTEL_ENVIRONMENT", "production")
     monkeypatch.setenv("OTEL_SERVICE_VERSION", "2.0.0")
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
@@ -61,7 +61,7 @@ def test_config_from_env_and_kwargs(monkeypatch):
 
     # When kwargs are omitted, env vars are used
     cfg1 = SDKConfig.from_env_and_kwargs()
-    assert cfg1.service_name == "env-service"
+    assert cfg1.project_name == "env-service"
     assert cfg1.environment == "production"
     assert cfg1.version == "2.0.0"
     assert cfg1.endpoint == "http://otel-collector:4318"
@@ -70,12 +70,12 @@ def test_config_from_env_and_kwargs(monkeypatch):
 
     # Kwargs override env vars
     cfg2 = SDKConfig.from_env_and_kwargs(
-        service="override-service",
+        project_name="override-service",
         environment="dev",
         sample_rate=0.8,
         headers={"team": "product"},
     )
-    assert cfg2.service_name == "override-service"
+    assert cfg2.project_name == "override-service"
     assert cfg2.environment == "dev"
     assert cfg2.sample_rate == 0.8
     assert cfg2.headers["team"] == "product"
@@ -86,7 +86,7 @@ def test_disabled_mode():
     """Verify that disabled mode prevents spans from being recorded."""
     exporter = InMemorySpanExporter()
     provider = tracenest.init(
-        service="disabled-service",
+        project_name="disabled-service",
         disabled=True,
         exporter=exporter,
         export_batch=False,
@@ -103,7 +103,7 @@ def test_span_creation_and_export():
     """Verify spans are created, executed within context, and exported correctly."""
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="span-test-service",
+        project_name="span-test-service",
         exporter=exporter,
         export_batch=False,
     )
@@ -260,7 +260,7 @@ def test_patch_all_respects_kwargs_and_config_disables():
 
     # 2. Disabled via config
     tracenest.init(
-        service="test-service",
+        project_name="test-service",
         integrations={"mock_installed": False},
         export_batch=False,
     )
@@ -293,7 +293,7 @@ def test_unreachable_collector_never_crashes_application():
     """Verify that tracing with an unreachable collector endpoint NEVER crashes or raises."""
     # Point to a dead/non-existent port on localhost
     provider = tracenest.init(
-        service="resilience-test",
+        project_name="resilience-test",
         endpoint="http://127.0.0.1:59999",
         export_batch=False,
     )
@@ -326,7 +326,7 @@ def test_auto_patch_true_instruments_installed_integrations():
 
     target = DummyTarget()
     tracenest.init(
-        service="auto-patch-test",
+        project_name="auto-patch-test",
         auto_patch=True,
         exporter=InMemorySpanExporter(),
         export_batch=False,
@@ -341,7 +341,7 @@ def test_auto_patch_false_skips_instrumentation():
 
     target = DummyTarget()
     tracenest.init(
-        service="no-auto-patch-test",
+        project_name="no-auto-patch-test",
         auto_patch=False,
         exporter=InMemorySpanExporter(),
         export_batch=False,
@@ -357,7 +357,7 @@ def test_auto_patch_respects_integrations_config():
 
     target = DummyTarget()
     tracenest.init(
-        service="config-disable-test",
+        project_name="config-disable-test",
         integrations={"mock_installed": False},
         exporter=InMemorySpanExporter(),
         export_batch=False,

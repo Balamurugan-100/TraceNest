@@ -13,15 +13,15 @@ def _str_to_bool(val: Any, default: bool = False) -> bool:
     return str(val).strip().lower() in ("1", "true", "yes", "on")
 
 
-def _detect_django_service_name() -> Optional[str]:
-    """Try to auto-detect service name from Django settings."""
+def _detect_django_project_name() -> Optional[str]:
+    """Try to auto-detect project name from Django settings."""
     try:
         from django.conf import settings
-        # Check common Django settings for service/app name
+        # Check common Django settings for project/app name
         return (
-            getattr(settings, "TRACENEST_SERVICE_NAME", None)
-            or getattr(settings, "OTEL_SERVICE_NAME", None)
-            or getattr(settings, "SERVICE_NAME", None)
+            getattr(settings, "TRACENEST_PROJECT_NAME", None)
+            or getattr(settings, "OTEL_PROJECT_NAME", None)
+            or getattr(settings, "PROJECT_NAME", None)
         )
     except Exception:
         return None
@@ -62,7 +62,9 @@ DEFAULT_EXCLUDE_PATTERNS = [
 class SDKConfig:
     """Configuration options for TraceNest SDK."""
 
-    service_name: str = "unknown-service"
+    project_name: str = "unknown-project"
+    cluster_name: Optional[str] = None
+    cluster_name: Optional[str] = None
     environment: str = "development"
     version: str = "0.1.0"
     endpoint: str = "http://localhost:4318"
@@ -86,8 +88,9 @@ class SDKConfig:
     @classmethod
     def from_env_and_kwargs(
         cls,
-        service: Optional[str] = None,
-        service_name: Optional[str] = None,
+        project: Optional[str] = None,
+        project_name: Optional[str] = None,
+        cluster_name: Optional[str] = None,
         environment: Optional[str] = None,
         version: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -103,15 +106,31 @@ class SDKConfig:
         """Build SDKConfig by prioritizing explicit kwargs over environment variables."""
 
         # 1. Service name (auto-detect from Django settings if available)
-        resolved_service = (
-            service
-            or service_name
-            or os.getenv("TRACENEST_SERVICE_NAME")
-            or os.getenv("TRACENEST_SERVICE")
-            or os.getenv("OTEL_SERVICE_NAME")
-            or os.getenv("TP_OBS_SERVICE_NAME")
-            or _detect_django_service_name()
-            or "unknown-service"
+        resolved_project = (
+            project
+            or project_name
+            or os.getenv("TRACENEST_PROJECT_NAME")
+            or os.getenv("TRACENEST_PROJECT")
+            or os.getenv("OTEL_PROJECT_NAME")
+            or os.getenv("TP_OBS_PROJECT_NAME")
+            or _detect_django_project_name()
+            or "unknown-project"
+        )
+
+        
+        resolved_cluster = (
+            cluster_name
+            or os.getenv("TRACENEST_CLUSTER_NAME")
+            or os.getenv("TRACENEST_CLUSTER")
+            or "unknown-cluster"
+        )
+
+        
+        resolved_cluster = (
+            cluster_name
+            or os.getenv("TRACENEST_CLUSTER_NAME")
+            or os.getenv("TRACENEST_CLUSTER")
+            or "unknown-cluster"
         )
 
         # 2. Environment (auto-detect from Django settings if available)
@@ -302,7 +321,8 @@ class SDKConfig:
             resolved_sample_errors = _str_to_bool(os.getenv("TRACENEST_SAMPLE_ERRORS", "true"), default=True)
 
         return cls(
-            service_name=resolved_service,
+            project_name=resolved_project,
+            cluster_name=resolved_cluster,
             environment=resolved_env,
             version=resolved_version,
             endpoint=resolved_endpoint,

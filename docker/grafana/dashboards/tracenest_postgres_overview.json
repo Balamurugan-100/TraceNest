@@ -13,9 +13,9 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Service Catalog",
+      "title": "\u2190 Project Catalog",
       "type": "link",
-      "url": "/d/tracenest-service-catalog?var-service=$service&${__url_time_range}"
+      "url": "/d/tracenest-project-catalog?var-project=$project&${__url_time_range}"
     },
     {
       "asDropdown": false,
@@ -25,7 +25,7 @@
       "targetBlank": false,
       "title": "Django Overview",
       "type": "link",
-      "url": "/d/tracenest-django-overview?var-service=$service&${__url_time_range}"
+      "url": "/d/tracenest-django-overview?var-project=$project&${__url_time_range}"
     },
     {
       "asDropdown": false,
@@ -35,7 +35,7 @@
       "targetBlank": false,
       "title": "Redis Overview",
       "type": "link",
-      "url": "/d/tracenest-redis-overview?var-service=$service&${__url_time_range}"
+      "url": "/d/tracenest-redis-overview?var-project=$project&${__url_time_range}"
     }
   ],
   "refresh": "5s",
@@ -54,6 +54,37 @@
         "allValue": ".*",
         "current": {
           "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, cluster_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(apm_calls_total, cluster_name)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -61,14 +92,14 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\"}, service_name)",
+        "definition": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\"}, project_name)",
         "hide": 0,
         "includeAll": true,
-        "label": "Service",
+        "label": "Project",
         "multi": false,
-        "name": "service",
+        "name": "project",
         "options": [],
-        "query": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\"}, service_name)",
+        "query": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\"}, project_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -84,14 +115,14 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\"}, db_instance)",
+        "definition": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\"}, db_instance)",
         "hide": 0,
         "includeAll": true,
         "label": "DB Instance",
         "multi": false,
         "name": "instance",
         "options": [],
-        "query": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\"}, db_instance)",
+        "query": "label_values(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, db_instance)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -113,7 +144,7 @@
   "timezone": "browser",
   "title": "PostgreSQL \u2014 Database Overview",
   "uid": "tracenest-postgres-overview",
-  "version": 2,
+  "version": 3,
   "panels": [
     {
       "collapsed": false,
@@ -245,7 +276,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__rate_interval]))",
           "legendFormat": "Hits",
           "range": true,
           "refId": "A"
@@ -256,7 +287,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])) or vector(0)",
+          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])) or vector(0)",
           "legendFormat": "Errors",
           "range": true,
           "refId": "B"
@@ -353,7 +384,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])) or vector(0)",
+          "expr": "sum(rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])) or vector(0)",
           "legendFormat": "Errors",
           "range": true,
           "refId": "A"
@@ -460,7 +491,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(5, sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__rate_interval])))",
+          "expr": "topk(5, sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__rate_interval])))",
           "legendFormat": "{{db_statement}}",
           "range": true,
           "refId": "A"
@@ -555,7 +586,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(5, histogram_quantile(0.95, sum by (le, db_statement) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__rate_interval]))))",
+          "expr": "topk(5, histogram_quantile(0.95, sum by (le, db_statement) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__rate_interval]))))",
           "legendFormat": "{{db_statement}}",
           "range": true,
           "refId": "A"
@@ -650,7 +681,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(5, sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])))",
+          "expr": "topk(5, sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\", error=\"true\"}[$__rate_interval])))",
           "legendFormat": "{{db_statement}}",
           "range": true,
           "refId": "A"
@@ -720,7 +751,7 @@
                 "value": [
                   {
                     "title": "Open Query Traces: ${__data.fields.Query}",
-                    "url": "/d/tracenest-postgres-query?var-query=${__value.raw:percentencode}&var-service=${service}&${__url_time_range}"
+                    "url": "/d/tracenest-postgres-query?var-query=${__value.raw:percentencode}&var-project=${project}&var-cluster=${cluster}&${__url_time_range}"
                   }
                 ]
               }
@@ -860,7 +891,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range]))",
+          "expr": "sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range]))",
           "format": "table",
           "instant": true,
           "legendFormat": "Requests",
@@ -873,7 +904,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (db_statement) (increase(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range]))",
+          "expr": "sum by (db_statement) (increase(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range]))",
           "format": "table",
           "instant": true,
           "legendFormat": "Total Time",
@@ -886,7 +917,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le, db_statement) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range])))",
+          "expr": "histogram_quantile(0.95, sum by (le, db_statement) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range])))",
           "format": "table",
           "instant": true,
           "legendFormat": "P95 Latency",
@@ -899,7 +930,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "(sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\", error=\"true\"}[$__range]))) or (0 * sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range])))",
+          "expr": "(sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\", error=\"true\"}[$__range]))) or (0 * sum by (db_statement) (increase(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range])))",
           "format": "table",
           "instant": true,
           "legendFormat": "Errors",
@@ -912,7 +943,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "(((sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\", error=\"true\"}[$__range]))) or (0 * sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range])))) / (sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", service_name=~\"$service\", db_instance=~\"$instance\"}[$__range])) > 0)) * 100",
+          "expr": "(((sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\", error=\"true\"}[$__range]))) or (0 * sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range])))) / (sum by (db_statement) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", db_instance=~\"$instance\"}[$__range])) > 0)) * 100",
           "format": "table",
           "instant": true,
           "legendFormat": "Error Rate %",

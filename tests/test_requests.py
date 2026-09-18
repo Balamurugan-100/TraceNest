@@ -29,7 +29,7 @@ def clean_sdk():
 def memory_exporter():
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service_name="test-http-service",
+        project_name="test-http-service",
         environment="test",
         exporter=exporter,
         export_batch=False,

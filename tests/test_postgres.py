@@ -110,7 +110,7 @@ def clean_sdk_and_postgres():
 def test_select_creates_span():
     """Verify executing a query through CursorWrapper creates a CLIENT span with connection attributes."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor(rowcount=5)
     mock_db = MockDatabaseConnection(
@@ -148,7 +148,7 @@ def test_select_creates_span():
 def test_sanitized_sql_in_attributes():
     """Verify raw parameters and values are sanitized in db.statement."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor()
     mock_db = MockDatabaseConnection(alias="default")
@@ -169,7 +169,7 @@ def test_sanitized_sql_in_attributes():
 def test_primary_role_detected():
     """Verify primary role is detected for default / non-replica database aliases."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor()
     mock_db = MockDatabaseConnection(alias="default")
@@ -185,7 +185,7 @@ def test_primary_role_detected():
 def test_replica_role_detected():
     """Verify replica role and custom peer.service are detected for slave/read aliases."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor()
     mock_db = MockDatabaseConnection(alias="slave1db", host="pg-replica.prod")
@@ -205,7 +205,7 @@ def test_replica_role_detected():
 def test_reentrancy_guard_prevents_duplicate_spans():
     """Verify that re-entrant cursor executions do not create duplicate spans."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     class ReentrantRawCursor:
         def __init__(self):
@@ -232,7 +232,7 @@ def test_reentrancy_guard_prevents_duplicate_spans():
 def test_query_exception_records_error():
     """Verify database exceptions are recorded with status ERROR and error attributes."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor(raise_exc=RuntimeError("connection deadlock detected"))
     mock_db = MockDatabaseConnection(alias="default")
@@ -255,7 +255,7 @@ def test_query_exception_records_error():
 def test_executemany_creates_span():
     """Verify executemany creates a CLIENT span with correct operation."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     raw_cursor = MockRawCursor(rowcount=3)
     mock_db = MockDatabaseConnection(alias="default")
@@ -294,7 +294,7 @@ def test_uninstrument_and_idempotency():
     """Verify clean uninstrumentation restores original methods and instrument is idempotent."""
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False, auto_patch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False, auto_patch=False)
 
     integration = PostgresIntegration()
     assert integration.instrument() is True
@@ -320,7 +320,7 @@ def test_patch_all_enables_postgres():
     """Verify tracenest.patch_all() auto-discovers and instruments postgres."""
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="postgres-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="postgres-test-svc", exporter=exporter, export_batch=False)
 
     enabled = tracenest.patch_all()
     assert "postgres" in enabled
@@ -340,7 +340,7 @@ def test_django_request_waterfall_with_db():
     """Verify full waterfall: django.request -> django.view -> postgres.query."""
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="waterfall-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="waterfall-test", exporter=exporter, export_batch=False)
     tracenest.patch_all()
 
     from django.urls import clear_url_caches
@@ -419,7 +419,7 @@ def test_two_tier_db_spans_datadog_parity():
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="postgres-test-svc",
+        project_name="postgres-test-svc",
         exporter=exporter,
         export_batch=False,
         db_two_tier_spans=True,
@@ -458,7 +458,7 @@ def test_pgbouncer_single_span_attributes():
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="pgbouncer-test-svc",
+        project_name="pgbouncer-test-svc",
         exporter=exporter,
         export_batch=False,
     )
@@ -502,7 +502,7 @@ def test_suppress_driver_instrumentation_prevents_duplicate_spans():
     """Verify suppress_db_instrumentation sets OTel _SUPPRESS_INSTRUMENTATION_KEY to prevent duplicate driver spans."""
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="single-span-policy-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="single-span-policy-svc", exporter=exporter, export_batch=False)
 
     from tracenest.integrations.postgres.cursor import suppress_db_instrumentation
     from opentelemetry.context import get_value, _SUPPRESS_INSTRUMENTATION_KEY

@@ -92,7 +92,7 @@ def clean_sdk_and_django():
 def test_request_span_created():
     """Verify standard HTTP request creates a SERVER root span with HTTP attributes."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -123,7 +123,7 @@ def test_request_span_created():
 def test_view_span_resolves_name():
     """Verify internal view execution generates a django.view child span."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -146,7 +146,7 @@ def test_view_span_resolves_name():
 def test_template_span_created():
     """Verify template rendering generates a django.template child span."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -169,7 +169,7 @@ def test_template_span_created():
 def test_error_500_marks_span():
     """Verify 500 responses mark request spans as ERROR."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -191,7 +191,7 @@ def test_error_500_marks_span():
 def test_w3c_traceparent_propagation():
     """Verify incoming W3C traceparent headers link the root request span to the distributed trace."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -216,7 +216,7 @@ def test_w3c_traceparent_propagation():
 def test_throttled_429_marks_span():
     """Verify 429 Too Many Requests sets status code correctly without 5xx error flag."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-test-svc", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-test-svc", exporter=exporter, export_batch=False)
 
     from django.core.handlers.wsgi import WSGIHandler
     handler = WSGIHandler()
@@ -239,7 +239,7 @@ def test_static_tags_applied_to_request_span():
     """Verify static tags from SDKConfig.tags are applied to request spans."""
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="django-test-svc",
+        project_name="django-test-svc",
         exporter=exporter,
         export_batch=False,
         tags={"org": "testpress", "institute": "karunya", "subdomain": "lms"},
@@ -265,7 +265,7 @@ def test_static_tags_applied_to_view_span():
     """Verify static tags from SDKConfig.tags are applied to view spans."""
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="django-test-svc",
+        project_name="django-test-svc",
         exporter=exporter,
         export_batch=False,
         tags={"org": "testpress", "institute": "karunya"},
@@ -299,7 +299,7 @@ def test_on_request_span_callback():
 
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="django-test-svc",
+        project_name="django-test-svc",
         exporter=exporter,
         export_batch=False,
         tags={"org": "testpress"},
@@ -330,7 +330,7 @@ def test_on_request_span_callback_exception_silenced():
 
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="django-test-svc",
+        project_name="django-test-svc",
         exporter=exporter,
         export_batch=False,
         on_request_span=bad_callback,

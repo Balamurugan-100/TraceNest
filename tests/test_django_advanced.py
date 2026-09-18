@@ -114,7 +114,7 @@ def clean():
 
 
 def _make_handler(exporter):
-    tracenest.init(service="adv-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="adv-test", exporter=exporter, export_batch=False)
     from django.core.handlers.wsgi import WSGIHandler
 
     h = WSGIHandler()
@@ -247,7 +247,7 @@ def test_repeated_instrumentation_no_double_wrap():
     assert i.instrument() is True
     assert i.instrument() is True  # second no-op
     # Now init and make handler
-    tracenest.init(service="repeat-test", exporter=exporter, export_batch=False, auto_patch=False)
+    tracenest.init(project_name="repeat-test", exporter=exporter, export_batch=False, auto_patch=False)
     from django.core.handlers.wsgi import WSGIHandler
 
     h = WSGIHandler()
@@ -285,7 +285,7 @@ def test_uninstrument_restores():
 
     mgr = get_integration_manager()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="uninstrument-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="uninstrument-test", exporter=exporter, export_batch=False)
     assert mgr.apply_integrations()  # re-instrument
     h = WSGIHandler()
     h.load_middleware()
@@ -313,7 +313,7 @@ def test_uninstrument_restores():
 def test_nested_template_includes_enabled_by_default():
     """Verify nested/included templates are captured by default matching Datadog behavior."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-template-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-template-test", exporter=exporter, export_batch=False)
 
     from django.template import Engine
 
@@ -349,7 +349,7 @@ def test_nested_template_includes_enabled_by_default():
 def test_nested_template_suppression_opt_out():
     """Verify nested/included templates can be suppressed via trace_nested_templates=False."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-template-test", exporter=exporter, export_batch=False, trace_nested_templates=False)
+    tracenest.init(project_name="django-template-test", exporter=exporter, export_batch=False, trace_nested_templates=False)
 
     from django.template import Engine
 
@@ -384,7 +384,7 @@ def test_nested_template_suppression_opt_out():
 def test_multipart_template_error_waterfall():
     """Verify multi-part template rendering."""
     exporter = InMemorySpanExporter()
-    tracenest.init(service="django-template-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="django-template-test", exporter=exporter, export_batch=False)
 
     from django.template import Engine
 
@@ -445,7 +445,7 @@ def test_template_pattern_exclusion():
     """Verify templates matching exclude patterns (e.g. django/forms/*, */widgets/*) are skipped."""
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service="django-template-exclude-test",
+        project_name="django-template-exclude-test",
         exporter=exporter,
         export_batch=False,
         template_instrumentation={
@@ -529,7 +529,7 @@ def test_datadog_style_middleware_waterfall():
     import tracenest
 
     exporter = InMemorySpanExporter()
-    tracenest.init(service="dd-waterfall-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="dd-waterfall-test", exporter=exporter, export_batch=False)
 
     # Test with configured middlewares (SecurityMiddleware and CommonMiddleware)
     h = WSGIHandler()
@@ -565,7 +565,7 @@ def test_view_cbv_multilevel_nesting():
 
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="cbv-multilevel-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="cbv-multilevel-test", exporter=exporter, export_batch=False)
     get_integration_manager().apply_integrations()
 
     h = WSGIHandler()
@@ -601,7 +601,7 @@ def test_drf_viewset_action_tracing():
 
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="viewset-action-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="viewset-action-test", exporter=exporter, export_batch=False)
     get_integration_manager().apply_integrations()
 
     h = WSGIHandler()
@@ -658,7 +658,7 @@ def test_template_query_nesting_waterfall():
 
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
-    tracenest.init(service="template-nesting-test", exporter=exporter, export_batch=False)
+    tracenest.init(project_name="template-nesting-test", exporter=exporter, export_batch=False)
     from tracenest.integrations import get_integration_manager
     mgr = get_integration_manager()
     mgr.apply_integrations()

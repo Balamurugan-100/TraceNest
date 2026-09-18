@@ -102,7 +102,7 @@ def clean_sdk():
 def memory_exporter():
     exporter = InMemorySpanExporter()
     tracenest.init(
-        service_name="test-redis-service",
+        project_name="test-redis-service",
         environment="test",
         exporter=exporter,
         export_batch=False,
@@ -368,4 +368,47 @@ def test_django_redis_cache_tracing(memory_exporter):
     assert span.attributes["django.cache.key"] == "tenant:subdomain.com"
     assert span.attributes["django.cache.backend"] == "FakeRedisCache"
     assert span.attributes["django.cache.hit"] is True
+
+
+def test_redis_integration_apply_patch_and_uninstrument(monkeypatch):
+    """Verify RedisIntegration wraps and unwraps Redis methods cleanly."""
+    import sys
+    import types
+
+    fake_redis_mod = types.ModuleType("redis")
+    fake_client_mod = types.ModuleType("redis.client")
+
+    class DummyRedis:
+        def execute_command(self, *args, **kwargs):
+            return "DUMMY_OK"
+
+    class DummyPipeline:
+        def execute(self, *args, **kwargs):
+            return ["DUMMY_PIPE"]
+
+    fake_redis_mod.Redis = DummyRedis
+    fake_client_mod.Pipeline = DummyPipeline
+    fake_redis_mod.client = fake_client_mod
+
+    monkeypatch.setitem(sys.modules, "redis", fake_redis_mod)
+    monkeypatch.setitem(sys.modules, "redis.client", fake_client_mod)
+
+    integ = RedisIntegration()
+    assert integ.is_installed() is True
+
+    integ._apply_patch()
+    assert integ._is_patched is True
+    assert len(integ._wrapped_targets) >= 2
+
+    # Verify DummyRedis is wrapped
+    client_instance = DummyRedis()
+    client_instance.connection_pool = MockConnectionPool()
+    res = client_instance.execute_command("PING")
+    assert res == "DUMMY_OK"
+
+    # Uninstrument
+    assert integ.uninstrument() is True
+    assert integ._is_patched is False
+    assert len(integ._wrapped_targets) == 0
+
 
