@@ -210,7 +210,7 @@
   "timezone": "browser",
   "title": "TraceNest APM — Service Catalog",
   "uid": "tracenest-project-catalog",
-  "version": 19,
+  "version": 20,
   "panels": [
     {
       "collapsed": false,
@@ -1872,7 +1872,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m])",
+          "expr": "max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m])",
           "format": "table",
           "instant": true,
           "legendFormat": "Current RPS",
@@ -1898,7 +1898,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / clamp_min((quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))), 0.001)) * 100",
+          "expr": "((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) - quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001)) * 100",
           "format": "table",
           "instant": true,
           "legendFormat": "Change",
@@ -1911,7 +1911,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "label_replace((((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / clamp_min((quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))), 0.001)) * 100 > 50) * 0 + 1, \"Status\", \"Anomalous\", \"\", \"\")",
+          "expr": "label_replace((((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) - quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001)) * 100 > 50) * 0 + 1, \"Status\", \"Anomalous\", \"\", \"\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Status",
@@ -1924,6 +1924,38 @@
         {
           "id": "merge",
           "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #D": true
+            },
+            "indexByName": {
+              "Project": 0,
+              "Endpoint": 1,
+              "Method": 2,
+              "Current RPS": 3,
+              "Baseline RPS": 4,
+              "Change": 5,
+              "Status": 6,
+              "project_name": 0,
+              "http_route": 1,
+              "http_method": 2,
+              "Value #A": 3,
+              "Value #B": 4,
+              "Value #C": 5
+            },
+            "renameByName": {
+              "Value #A": "Current RPS",
+              "Value #B": "Baseline RPS",
+              "Value #C": "Change",
+              "http_method": "Method",
+              "http_route": "Endpoint",
+              "project_name": "Project"
+            }
+          }
         },
         {
           "id": "filterByValue",
@@ -1942,29 +1974,6 @@
             ],
             "match": "all",
             "type": "include"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value #D": true
-            },
-            "indexByName": {
-              "project_name": 0,
-              "http_route": 1,
-              "http_method": 2,
-              "Current RPS": 3,
-              "Baseline RPS": 4,
-              "Change": 5,
-              "Status": 6
-            },
-            "renameByName": {
-              "project_name": "Project",
-              "http_route": "Endpoint",
-              "http_method": "Method"
-            }
           }
         }
       ],
