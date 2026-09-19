@@ -9,7 +9,7 @@
 #   1. postgres   - PostgreSQL latency bottleneck (>40% downstream time, elevated P95)
 #   2. redis      - Redis latency bottleneck (>25% downstream time, elevated P95)
 #   3. internal   - Django internal compute latency (P95 > 1s, downstream < 40%)
-#   4. error      - Error rate spike (>5% 5xx errors on endpoints)
+#   4. error      - Error rate spike (configurable error rate % via -e / --error-rate)
 #   5. traffic    - Traffic surge anomaly (>200% RPS baseline deviation, healthy latency)
 #   6. chaos      - Multiple simultaneous issues (PostgreSQL + Redis + Errors)
 #   7. healthy    - Normal baseline fast traffic (restores 0 active issues)
@@ -22,6 +22,8 @@ SCENARIO=""
 DURATION=60
 CONCURRENCY=3
 SLEEP_DELAY=0.02
+ERROR_RATE=100
+DELAY=1.8
 VERBOSE=0
 
 # Colors
@@ -39,28 +41,31 @@ usage() {
   echo -e "${C_BOLD}Usage: $0 <scenario> [OPTIONS]${C_RESET}"
   echo ""
   echo -e "${C_BOLD}Scenarios:${C_RESET}"
-  echo -e "  ${C_RED}postgres${C_RESET} | ${C_RED}--postgres${C_RESET}     Inject PostgreSQL latency bottleneck (pg_sleep 1.5s - 2.5s)"
-  echo -e "  ${C_RED}redis${C_RESET}    | ${C_RED}--redis${C_RESET}        Inject Redis operations latency bottleneck (delay 2.0s)"
-  echo -e "  ${C_YELLOW}internal${C_RESET} | ${C_YELLOW}--internal${C_RESET}     Inject Django internal processing latency (delay 1.5s)"
+  echo -e "  ${C_RED}postgres${C_RESET} | ${C_RED}--postgres${C_RESET}     Inject PostgreSQL latency bottleneck"
+  echo -e "  ${C_RED}redis${C_RESET}    | ${C_RED}--redis${C_RESET}        Inject Redis operations latency bottleneck"
+  echo -e "  ${C_YELLOW}internal${C_RESET} | ${C_YELLOW}--internal${C_RESET}     Inject Django internal processing latency"
   echo -e "  ${C_RED}error${C_RESET}    | ${C_RED}--error${C_RESET}        Inject 500 error rate spike on endpoints"
   echo -e "  ${C_BLUE}traffic${C_RESET}  | ${C_BLUE}--traffic${C_RESET}      Inject traffic surge anomaly (>200% baseline, healthy latency)"
   echo -e "  ${C_MAGENTA}chaos${C_RESET}    | ${C_MAGENTA}--chaos${C_RESET}        Trigger multi-issue chaos (Postgres + Redis + Errors)"
   echo -e "  ${C_GREEN}healthy${C_RESET}  | ${C_GREEN}--healthy${C_RESET}      Send clean baseline traffic (0 issues in Needs Attention)"
   echo ""
   echo -e "${C_BOLD}Options:${C_RESET}"
+  echo "  -e, --error-rate PCT Target error rate percentage (1-100, default: 100)"
+  echo "  --delay SEC          Artificial delay in seconds (default: 1.8s)"
   echo "  -d, --duration N     Duration in seconds to run injection (default: 60)"
-  echo "  -c, --concurrency N  Number of concurrent workers (default: 2)"
-  echo "  -s, --sleep SEC      Sleep between requests in seconds (default: 0.1)"
+  echo "  -c, --concurrency N  Number of concurrent workers (default: 3)"
+  echo "  -s, --sleep SEC      Sleep between requests in seconds (default: 0.02)"
   echo "  -u, --url URL        Base URL (default: http://localhost:8001)"
   echo "  -v, --verbose        Print response details"
   echo "  -h, --help           Show this help message"
   echo ""
   echo -e "${C_BOLD}Examples:${C_RESET}"
-  echo "  $0 postgres"
-  echo "  $0 redis -d 120"
-  echo "  $0 error -c 5"
-  echo "  $0 traffic -c 8 -s 0"
-  echo "  $0 healthy"
+  echo "  $0 error -e 15                  # Generate exact 15% error rate"
+  echo "  $0 error -e 50 -c 10            # Generate 50% error rate with 10 workers"
+  echo "  $0 postgres --delay 3.0         # Inject 3.0s PostgreSQL queries"
+  echo "  $0 redis --delay 2.5            # Inject 2.5s Redis operations"
+  echo "  $0 traffic -c 8 -s 0            # Inject traffic surge"
+  echo "  $0 healthy                      # Restore healthy baseline"
   exit 0
 }
 
@@ -74,6 +79,14 @@ while [[ "$#" -gt 0 ]]; do
   traffic | surge | --traffic | --surge) SCENARIO="traffic" ;;
   chaos | all | --chaos | --all) SCENARIO="chaos" ;;
   healthy | normal | clean | --healthy | --normal | --clean) SCENARIO="healthy" ;;
+  -e | --error-rate | --percent)
+    ERROR_RATE="$2"
+    shift
+    ;;
+  --delay)
+    DELAY="$2"
+    shift
+    ;;
   -d | --duration)
     DURATION="$2"
     shift
@@ -112,6 +125,12 @@ echo "================================================================="
 echo "   ⚡ TraceNest APM Anomaly Generator"
 echo "   Target URL:     ${BASE_URL}"
 echo "   Scenario:       ${SCENARIO}"
+if [ "$SCENARIO" = "error" ] || [ "$ERROR_RATE" -ne 100 ]; then
+  echo "   Target Error %: ${ERROR_RATE}%"
+fi
+if [ "$SCENARIO" = "postgres" ] || [ "$SCENARIO" = "redis" ] || [ "$SCENARIO" = "internal" ]; then
+  echo "   Latency Delay:  ${DELAY}s"
+fi
 echo "   Duration:       ${DURATION}s"
 echo "   Concurrency:    ${CONCURRENCY} worker(s)"
 echo "   Sleep Delay:    ${SLEEP_DELAY}s"
@@ -160,29 +179,39 @@ run_scenario_worker() {
     case "$SCENARIO" in
     postgres)
       # Injects slow SQL queries across DBs to trigger high Postgres P95 and >40% downstream duration
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(1.8)%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL (default): pg_sleep(1.8s) Slow Query"
+      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(${DELAY})%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL (default): pg_sleep(${DELAY}s) Slow Query"
       send_req "GET" "/api/products/read-slave1/" "" "PostgreSQL (slave1): Read Products"
       send_req "GET" "/api/products/" "" "Django: Product Catalog View"
       ;;
 
     redis)
       # Injects slow Redis cache operations to trigger Redis P95 > 200ms and >25% downstream duration
-      send_req "GET" "/api/products/redis-slow/?delay=2.0" "" "Redis: Heavy Key Scan / Iteration Delay (2.0s)"
+      send_req "GET" "/api/products/redis-slow/?delay=${DELAY}" "" "Redis: Heavy Key Scan / Iteration Delay (${DELAY}s)"
       send_req "GET" "/api/cache-stats/" "" "Redis: Cache Stats & Memory Info"
       send_req "GET" "/api/products/" "" "Django: Product Catalog View"
       ;;
 
     internal)
       # Injects pure internal Django execution latency without slow DB or Redis
-      send_req "GET" "/api/products/slow/?delay=1.5" "" "Django Internal: Simulated Compute / Handler Delay (1.5s)"
+      send_req "GET" "/api/products/slow/?delay=${DELAY}" "" "Django Internal: Simulated Compute / Handler Delay (${DELAY}s)"
       send_req "GET" "/api/products-tmpl/" "" "Django Internal: Template Rendering Loop"
       ;;
 
     error)
-      # Injects 500 error spikes on endpoints to trigger error rate > 2% / 5%
-      send_req "GET" "/api/products/error/" "" "Django: 500 Internal Server Error Spike"
-      send_req "GET" "/api/template-error/" "" "Django: Multi-Part Template Rendering Crash"
-      send_req "POST" "/api/products/" '{"invalid":"payload"}' "Django: 400/500 Validation Failure"
+      # Generates exact target error rate percentage based on -e / --error-rate
+      local roll=$(( RANDOM % 100 + 1 ))
+      if [ "$roll" -le "$ERROR_RATE" ]; then
+        # Send 500 error
+        local err_type=$(( RANDOM % 2 ))
+        if [ "$err_type" -eq 0 ]; then
+          send_req "GET" "/api/products/error/" "" "Django: 500 Internal Server Error Spike"
+        else
+          send_req "GET" "/api/template-error/" "" "Django: Multi-Part Template Rendering Crash"
+        fi
+      else
+        # Send normal 200 OK request
+        send_req "GET" "/api/products/" "" "Django: Products List (200 OK)"
+      fi
       ;;
 
     traffic)
@@ -193,9 +222,14 @@ run_scenario_worker() {
 
     chaos)
       # Multi-issue simultaneous chaos
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(1.5)%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL: Slow Query (Chaos)"
-      send_req "GET" "/api/products/redis-slow/?delay=1.5" "" "Redis: Slow Cache (Chaos)"
-      send_req "GET" "/api/products/error/" "" "Django: 500 Error (Chaos)"
+      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(${DELAY})%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL: Slow Query (Chaos)"
+      send_req "GET" "/api/products/redis-slow/?delay=${DELAY}" "" "Redis: Slow Cache (Chaos)"
+      local roll=$(( RANDOM % 100 + 1 ))
+      if [ "$roll" -le "$ERROR_RATE" ]; then
+        send_req "GET" "/api/products/error/" "" "Django: 500 Error (Chaos)"
+      else
+        send_req "GET" "/api/products/" "" "Django: Product List (Chaos)"
+      fi
       ;;
 
     healthy)
