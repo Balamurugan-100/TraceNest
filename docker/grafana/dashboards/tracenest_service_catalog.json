@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "TraceNest APM \u2014 Dynamic catalog of installed & active components. Detects Django, PostgreSQL, Redis, and HTTP Client automatically from telemetry.",
+  "description": "TraceNest APM — Dynamic catalog of installed & active components. Detects Django, PostgreSQL, Redis, and HTTP Client automatically from telemetry.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -208,9 +208,9 @@
     ]
   },
   "timezone": "browser",
-  "title": "TraceNest APM \u2014 Service Catalog",
+  "title": "TraceNest APM — Service Catalog",
   "uid": "tracenest-project-catalog",
-  "version": 15,
+  "version": 18,
   "panels": [
     {
       "collapsed": false,
@@ -494,7 +494,7 @@
           },
           "links": [
             {
-              "title": "View all anomalies \u2192",
+              "title": "View all anomalies →",
               "url": "/d/tracenest-project-catalog?${__all_variables}&${__url_time_range}&viewPanel=403",
               "targetBlank": false
             }
@@ -546,7 +546,7 @@
           "editorMode": "code",
           "expr": "count(((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) - quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001) * 100 > 50) or vector(0)",
           "instant": true,
-          "legendFormat": "\u26a0\ufe0f Anomalies (need attention >)",
+          "legendFormat": "⚠️ Anomalies (need attention >)",
           "range": false,
           "refId": "A"
         }
@@ -555,12 +555,297 @@
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Operational System Overview — Screener-style interpretation layer. Correlates multi-signal telemetry (baseline deviations, downstream duration, error rates) to surface active incidents, impact radius, and direct investigation paths.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "noValue": "-"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "🔴 Critical": {
+                        "color": "#ef4444"
+                      },
+                      "🟡 Warning": {
+                        "color": "#eab308"
+                      },
+                      "ℹ️ Traffic Surge": {
+                        "color": "#3b82f6"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Problem"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              },
+              {
+                "id": "displayName",
+                "value": "Problem Diagnosis"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Impact"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              },
+              {
+                "id": "displayName",
+                "value": "Impact Scope"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Evidence"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Telemetry Evidence & Details"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Action"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              },
+              {
+                "id": "displayName",
+                "value": "Investigation Target"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#38bdf8",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate →",
+                    "url": "${__data.fields.TargetUrl}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TargetUrl"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 160,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Severity"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100 > 30) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=\"postgresql\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 250) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350)) * 0 + 1), \"Severity\", \"🔴 Critical\", \"\", \"\"), \"Problem\", \"PostgreSQL Degradation\", \"\", \"\"), \"Evidence\", \"PostgreSQL accounts for >30% downstream time with elevated P95 latency. Django request latency is degraded.\", \"\", \"\"), \"Action\", \"→ Investigate PostgreSQL\", \"\", \"\"), \"TargetUrl\", \"/d/tracenest-postgres-overview?${__all_variables}&${__url_time_range}\", \"\", \"\"), \"Impact\", \" / \", \"project_name\", \"cluster_name\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "PostgreSQL Degradation",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100 > 20) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 150) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350)) * 0 + 1), \"Severity\", \"🔴 Critical\", \"\", \"\"), \"Problem\", \"Redis Degradation\", \"\", \"\"), \"Evidence\", \"Redis accounts for significant downstream time with elevated P95 latency. Upstream requests experiencing delays.\", \"\", \"\"), \"Action\", \"→ Investigate Redis\", \"\", \"\"), \"TargetUrl\", \"/d/tracenest-redis-overview?${__all_variables}&${__url_time_range}\", \"\", \"\"), \"Impact\", \" / \", \"project_name\", \"cluster_name\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Redis Degradation",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 800) and (((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))) + (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0) * 100 < 40)) * 0 + 1), \"Severity\", \"🟡 Warning\", \"\", \"\"), \"Problem\", \"Application Internal Latency\", \"\", \"\"), \"Evidence\", \"Django request latency is elevated (P95 > 800ms). Downstream dependencies account for <40% of duration; Django internal processing is the dominant observed latency contributor.\", \"\", \"\"), \"Action\", \"→ Investigate Django\", \"\", \"\"), \"TargetUrl\", \"/d/tracenest-django-overview?${__all_variables}&${__url_time_range}\", \"\", \"\"), \"Impact\", \" / \", \"project_name\", \"cluster_name\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Internal Django Latency",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((((sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m]))) / (sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100 > 2)) * 0 + 1), \"Severity\", \"🔴 Critical\", \"\", \"\"), \"Problem\", \"Error Rate Spike\", \"\", \"\"), \"Evidence\", \"Elevated HTTP error rate detected on endpoint (>2%). Errored responses observed.\", \"\", \"\"), \"Action\", \"→ Investigate Endpoint\", \"\", \"\"), \"TargetUrl\", \"/d/tracenest-django-endpoint?var-endpoint=${__data.fields.http_route:percentencode}&var-http_method=${__data.fields.http_method}&${__all_variables}&${__url_time_range}\", \"\", \"\"), \"Impact\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Error Spike",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((((max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / (quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001 or vector(0.001))) * 100 > 200) and (max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) > 20)) * 0 + 1), \"Severity\", \"ℹ️ Traffic Surge\", \"\", \"\"), \"Problem\", \"Traffic Surge Anomaly\", \"\", \"\"), \"Evidence\", \"Request rate surged >200% above 7d baseline (>20 req/s). Performance and error rates operating normally.\", \"\", \"\"), \"Action\", \"→ Investigate Endpoint\", \"\", \"\"), \"TargetUrl\", \"/d/tracenest-django-endpoint?var-endpoint=${__data.fields.http_route:percentencode}&var-http_method=${__data.fields.http_method}&${__all_variables}&${__url_time_range}\", \"\", \"\"), \"Impact\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Traffic Surge",
+          "range": false,
+          "refId": "E"
+        }
+      ],
+      "title": "⚠ NEEDS ATTENTION — Operational System Overview",
+      "type": "table",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "Value #A": true,
+              "Value #B": true,
+              "Value #C": true,
+              "Value #D": true,
+              "Value #E": true,
+              "cluster_name": true,
+              "http_method": true,
+              "http_route": true,
+              "project_name": true
+            },
+            "indexByName": {
+              "Severity": 0,
+              "Problem": 1,
+              "Impact": 2,
+              "Evidence": 3,
+              "Action": 4,
+              "TargetUrl": 5
+            },
+            "renameByName": {
+              "Action": "Investigation Target",
+              "Evidence": "Telemetry Evidence & Details",
+              "Impact": "Impact Scope",
+              "Problem": "Problem Diagnosis",
+              "Severity": "Severity",
+              "TargetUrl": "TargetUrl"
+            }
+          }
+        }
+      ]
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 12
       },
       "id": 200,
       "title": "Installed Components Matrix",
@@ -840,7 +1125,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 13
       },
       "id": 5,
       "options": {
@@ -983,7 +1268,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 23
       },
       "id": 300,
       "title": "Throughput & Downstream Breakdown",
@@ -1022,7 +1307,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 24
       },
       "id": 6,
       "options": {
@@ -1120,7 +1405,7 @@
           "refId": "G"
         }
       ],
-      "title": "\u25c6 Throughput Across Components",
+      "title": "◆ Throughput Across Components",
       "type": "timeseries"
     },
     {
@@ -1277,7 +1562,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 17
+        "y": 24
       },
       "id": 10,
       "options": {
@@ -1357,7 +1642,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "External HTTP",
           "range": true,
           "refId": "F"
@@ -1368,7 +1653,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_max(clamp_min(100 - (((sum(rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0) * 100), 0), 100)",
+          "expr": "clamp_max(clamp_min(100 - (((sum(rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0) * 100), 0), 100)",
           "legendFormat": "Django (Internal)",
           "range": true,
           "refId": "G"
@@ -1383,10 +1668,10 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 32
       },
       "id": 400,
-      "title": "\u26a0\ufe0f RPS Baseline Anomaly Detection",
+      "title": "⚠️ RPS Baseline Anomaly Detection",
       "type": "row"
     },
     {
@@ -1557,7 +1842,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 33
       },
       "id": 403,
       "options": {
@@ -1600,7 +1885,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])",
+          "expr": "quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))",
           "format": "table",
           "instant": true,
           "legendFormat": "Baseline RPS",
@@ -1613,7 +1898,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001 or vector(0.001))) * 100",
+          "expr": "((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / clamp_min((quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))), 0.001)) * 100",
           "format": "table",
           "instant": true,
           "legendFormat": "Change",
@@ -1626,7 +1911,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "label_replace((((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) > 0.001 or vector(0.001))) * 100 > 50) * 0 + 1, \"Status\", \"Anomalous\", \"\", \"\")",
+          "expr": "label_replace(((((max_over_time(sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[$__range:1m]) - (quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / clamp_min((quantile_over_time(0.5, sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h]) or (0 * sum by (project_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))), 0.001)) * 100 > 50) * 0 + 1, \"Status\", \"Anomalous\", \"\", \"\")",
           "format": "table",
           "instant": true,
           "legendFormat": "Status",
@@ -1634,7 +1919,7 @@
           "refId": "D"
         }
       ],
-      "title": "\u26a0\ufe0f RPS Baseline Anomaly Detection (Global)",
+      "title": "⚠️ RPS Baseline Anomaly Detection (Global)",
       "transformations": [
         {
           "id": "merge",
@@ -1651,7 +1936,7 @@
                     "value": 50
                   }
                 },
-                "fieldName": "Value #C",
+                "fieldName": "Change",
                 "type": "include"
               }
             ],
@@ -1670,21 +1955,15 @@
               "project_name": 0,
               "http_route": 1,
               "http_method": 2,
-              "Value #A": 3,
               "Current RPS": 3,
-              "Value #B": 4,
               "Baseline RPS": 4,
-              "Value #C": 5,
               "Change": 5,
               "Status": 6
             },
             "renameByName": {
               "project_name": "Project",
               "http_route": "Endpoint",
-              "http_method": "Method",
-              "Value #A": "Current RPS",
-              "Value #B": "Baseline RPS",
-              "Value #C": "Change"
+              "http_method": "Method"
             }
           }
         }
