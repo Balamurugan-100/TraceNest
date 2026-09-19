@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM \u2014 Redis Operations Overview: Total ops & errors, Top 5 commands by throughput, latency & errors, and interactive command resource routing table with bar gauges.",
+  "description": "Tracenest APM — Redis Operations Overview: Total ops & errors, Top 5 commands by throughput, latency & errors, and interactive command resource routing table with bar gauges.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Project Catalog",
+      "title": "← Project Catalog",
       "type": "link",
       "url": "/d/tracenest-project-catalog"
     },
@@ -120,40 +120,6 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(apm_calls_total, server_location)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Location",
-        "multi": true,
-        "name": "server_location",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, server_location)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": null,
-        "current": {
-          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -180,38 +146,16 @@
         "type": "query"
       },
       {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(apm_calls_total, team)",
+        "filters": [],
         "hide": 0,
-        "includeAll": true,
-        "label": "Team",
-        "multi": true,
-        "name": "team",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, team)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
+        "label": "Tags & Filters",
+        "name": "Filters",
+        "skipUrlSync": false,
+        "type": "adhoc"
       }
     ]
   },
@@ -228,7 +172,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Redis \u2014 Operations Overview",
+  "title": "Redis — Operations Overview",
   "uid": "tracenest-redis-overview",
   "version": 3,
   "panels": [
@@ -583,7 +527,7 @@
           "refId": "A"
         }
       ],
-      "title": "Requests \u2014 Top 5",
+      "title": "Requests — Top 5",
       "type": "timeseries"
     },
     {
@@ -678,7 +622,7 @@
           "refId": "A"
         }
       ],
-      "title": "p95 Latency \u2014 Top 5",
+      "title": "p95 Latency — Top 5",
       "type": "timeseries"
     },
     {
@@ -773,7 +717,7 @@
           "refId": "A"
         }
       ],
-      "title": "Errors \u2014 Top 5",
+      "title": "Errors — Top 5",
       "type": "timeseries"
     },
     {
@@ -837,7 +781,7 @@
                 "value": [
                   {
                     "title": "Open Command Traces: ${__data.fields.Command}",
-                    "url": "/d/tracenest-redis-command?var-command=${__value.raw:percentencode}&${project:queryparam}&${cluster:queryparam}&${server_location:queryparam}&${__url_time_range}"
+                    "url": "/d/tracenest-redis-command?var-command=${__value.raw:percentencode}&${__all_variables}&${__url_time_range}"
                   }
                 ]
               }
@@ -1072,7 +1016,7 @@
           "refId": "E"
         }
       ],
-      "title": "Showing 1 \u2013 10 of Redis Command Resources",
+      "title": "Showing 1 – 10 of Redis Command Resources",
       "transformations": [
         {
           "id": "merge",

@@ -321,7 +321,7 @@ run_traffic_cycle() {
     echo -e "   ${C_CYAN}🎯 Goal UI Pattern: PostgreSQL (~49%), Django (~30%), Downstream (~21%)...${C_RESET}"
     send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(0.06)%2C%20COUNT(*)%20FROM%20api_product" "" "Postgres Primary: pg_sleep(0.06s) Query (49% Time)"
     send_req "GET" "/api/products/" "" "Django: Products List Handler (30% Time)"
-    send_req "GET" "/api/products/external/" "" "HTTP Client: External Downstream Call (21% Time)"
+    # send_req "GET" "/api/products/external/" "" "HTTP Client: External Downstream Call (21% Time)"
     return
   fi
 
@@ -345,14 +345,14 @@ run_traffic_cycle() {
     fi
 
     if [ "$SLOW_REDIS" -eq 1 ]; then
-      echo -e "   ${C_YELLOW}⚡ Intentional Slowdown: Redis Cache Latency (1.0s delay)...${C_RESET}"
-      send_req "GET" "/api/products/redis-slow/?delay=1.0" "" "Redis Slow Operation (1.0s artificial sleep)"
+      echo -e "   ${C_YELLOW}⚡ Intentional Slowdown: Redis Cache Latency (5.0s delay)...${C_RESET}"
+      send_req "GET" "/api/products/redis-slow/?delay=5.0" "" "Redis Slow Operation (5.0s artificial sleep)"
       send_req "GET" "/api/cache-stats/" "" "Redis: Key Scan & Cache Backend Stats"
     fi
 
     if [ "$SLOW_HTTP" -eq 1 ]; then
       echo -e "   ${C_YELLOW}🌐 Intentional Slowdown: Downstream HTTP Client Latency (1.5s timeout)...${C_RESET}"
-      send_req "GET" "/api/products/external/" "" "HTTP Client: Outgoing Request to External API"
+      # send_req "GET" "/api/products/external/" "" "HTTP Client: Outgoing Request to External API"
       send_req "GET" "/api/s3-storage/" "" "Cloud Storage: S3/Boto Object Storage Call"
     fi
 
@@ -442,7 +442,7 @@ run_traffic_cycle() {
     send_req "GET" "/api/products/health/" "" "Full Health Check: All 4 Postgres DBs + Redis"
 
     # 4. Outgoing HTTP Downstream Call & Cloud Storage (requests & boto tracing)
-    send_req "GET" "/api/products/external/" "" "HTTP Client: Requests Package External Call"
+    # send_req "GET" "/api/products/external/" "" "HTTP Client: Requests Package External Call"
     send_req "GET" "/api/s3-storage/" "" "Cloud Storage (Boto/S3): List Objects"
 
     # 5. POST Operations & Transactions (Primary + Replicas)
@@ -513,7 +513,7 @@ run_worker_loop() {
   local worker_counts_file="${WORKER_DIR}/counts_${wid}"
 
   worker_save_counts() {
-    echo "${COUNT_TOTAL} ${COUNT_2XX} ${COUNT_4XX} ${COUNT_5XX}" > "$worker_counts_file"
+    echo "${COUNT_TOTAL} ${COUNT_2XX} ${COUNT_4XX} ${COUNT_5XX}" >"$worker_counts_file"
   }
 
   trap 'worker_save_counts; exit 0' INT TERM
@@ -563,7 +563,7 @@ if [ "$CONCURRENCY" -gt 1 ]; then
   COUNT_5XX=0
   for f in "${WORKER_DIR}"/counts_*; do
     [ -f "$f" ] || continue
-    read -r wt w2 w4 w5 < "$f"
+    read -r wt w2 w4 w5 <"$f"
     COUNT_TOTAL=$((COUNT_TOTAL + wt))
     COUNT_2XX=$((COUNT_2XX + w2))
     COUNT_4XX=$((COUNT_4XX + w4))

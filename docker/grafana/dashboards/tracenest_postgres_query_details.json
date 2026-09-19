@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM \u2014 Deep-dive performance for a specific PostgreSQL query. Renders request volume, latency percentiles, errors, and full distributed flamegraph trace waterfall in Tempo.",
+  "description": "Tracenest APM — Deep-dive performance for a specific PostgreSQL query. Renders request volume, latency percentiles, errors, and full distributed flamegraph trace waterfall in Tempo.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Back to PostgreSQL Overview",
+      "title": "← Back to PostgreSQL Overview",
       "type": "link",
       "url": "/d/tracenest-postgres-overview"
     },
@@ -23,7 +23,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Project Catalog",
+      "title": "← Project Catalog",
       "type": "link",
       "url": "/d/tracenest-project-catalog"
     },
@@ -120,40 +120,6 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(apm_calls_total, server_location)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Location",
-        "multi": true,
-        "name": "server_location",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, server_location)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": null,
-        "current": {
-          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -174,38 +140,16 @@
         "type": "query"
       },
       {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(apm_calls_total, team)",
+        "filters": [],
         "hide": 0,
-        "includeAll": true,
-        "label": "Team",
-        "multi": true,
-        "name": "team",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, team)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
+        "label": "Tags & Filters",
+        "name": "Filters",
+        "skipUrlSync": false,
+        "type": "adhoc"
       }
     ]
   },
@@ -222,7 +166,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "PostgreSQL \u2014 Query Details",
+  "title": "PostgreSQL — Query Details",
   "uid": "tracenest-postgres-query",
   "version": 3,
   "panels": [
@@ -917,8 +861,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "\ud83d\udd25 Open Flamegraph Waterfall in Tempo",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22p%22:%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22query%22:%22${__value.raw}%22,%22queryType%22:%22traceql%22,%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22tempo%22%7D,%22limit%22:20,%22tableType%22:%22traces%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D%7D&orgId=1"
+                    "title": "🔥 Open Flamegraph Waterfall in Tempo",
+                    "url": "/explore?left=%5B%22${__from}%22,%22${__to}%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D"
                   }
                 ]
               }
@@ -997,7 +941,7 @@
             "uid": "tempo"
           },
           "limit": 30,
-          "query": "{ span.db.system = \"postgresql\" && span.db.statement =~ `${query:regex}` } | select(span.db.statement, span.db.operation, duration, status)",
+          "query": "{ span.db.system = \"postgresql\" && span.db.statement =~ \"(?i).*${query:regex}.*\" }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"

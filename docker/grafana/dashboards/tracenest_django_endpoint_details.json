@@ -179,72 +179,16 @@
         "type": "query"
       },
       {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(apm_calls_total, server_location)",
+        "filters": [],
         "hide": 0,
-        "includeAll": true,
-        "label": "Location",
-        "multi": true,
-        "name": "server_location",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, server_location)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(apm_calls_total, team)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Team",
-        "multi": true,
-        "name": "team",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total, team)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
+        "label": "Tags & Filters",
+        "name": "Filters",
+        "skipUrlSync": false,
+        "type": "adhoc"
       }
     ]
   },
@@ -897,15 +841,10 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 45,
+            "fillOpacity": 65,
             "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
             "lineInterpolation": "smooth",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -914,32 +853,22 @@
             "spanNulls": true,
             "stacking": {
               "group": "A",
-              "mode": "percent"
+              "mode": "normal"
             },
             "thresholdsStyle": {
               "mode": "off"
             }
           },
           "decimals": 1,
-          "mappings": [],
           "max": 100,
           "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
           "unit": "percent"
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*django.*/i"
+              "id": "byName",
+              "options": "Django (Internal)"
             },
             "properties": [
               {
@@ -953,8 +882,8 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*(postgres|defaultdb|postgresql).*/i"
+              "id": "byName",
+              "options": "PostgreSQL"
             },
             "properties": [
               {
@@ -968,8 +897,8 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*redis.*/i"
+              "id": "byName",
+              "options": "Redis"
             },
             "properties": [
               {
@@ -983,8 +912,8 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*(requests|http|external).*/i"
+              "id": "byName",
+              "options": "External HTTP"
             },
             "properties": [
               {
@@ -998,8 +927,8 @@
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*s3.*/i"
+              "id": "byName",
+              "options": "S3 Storage"
             },
             "properties": [
               {
@@ -1043,7 +972,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or vector(0)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "PostgreSQL",
           "range": true,
           "refId": "A"
@@ -1054,7 +983,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_duration_milliseconds_sum{db_system=\"redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or vector(0)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{db_system=\"redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "Redis",
           "range": true,
           "refId": "B"
@@ -1065,7 +994,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_duration_milliseconds_sum{span_kind=\"SPAN_KIND_CLIENT\", http_method!=\"\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) or rate(apm_duration_milliseconds_sum{span_type=\"http\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or vector(0)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "External HTTP",
           "range": true,
           "refId": "C"
@@ -1076,7 +1005,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(apm_duration_milliseconds_sum{span_name=~\"S3.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or vector(0)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"(?i)s3.*|.*boto.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "S3 Storage",
           "range": true,
           "refId": "D"
@@ -1087,7 +1016,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_min(sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) - (sum(rate(apm_duration_milliseconds_sum{db_system=\"postgresql\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{db_system=\"redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{span_kind=\"SPAN_KIND_CLIENT\", http_method!=\"\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) or vector(0)) + sum(rate(apm_duration_milliseconds_sum{span_name=~\"S3.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) or vector(0))), 0)",
+          "expr": "clamp_max(clamp_min(100 - (((sum(rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"(?i)s3.*|.*boto.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0) * 100), 0), 100)",
           "legendFormat": "Django (Internal)",
           "range": true,
           "refId": "E"
@@ -1157,7 +1086,7 @@
                 "value": [
                   {
                     "title": "\ud83d\udd25 Open Flamegraph Waterfall in Tempo",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22p%22:%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22query%22:%22${__value.raw}%22,%22queryType%22:%22traceql%22,%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22tempo%22%7D,%22limit%22:20,%22tableType%22:%22traces%22%7D%5D,%22range%22:%7B%22from%22:%22${__from}%22,%22to%22:%22${__to}%22%7D%7D%7D&orgId=1"
+                    "url": "/explore?left=%5B%22${__from}%22,%22${__to}%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D"
                   }
                 ]
               }
@@ -1247,7 +1176,7 @@
             "uid": "tempo"
           },
           "limit": 30,
-          "query": "{ span.http.route = \"$endpoint\" } | select(span.http.route, span.http.request.method, span.http.response.status_code, duration)",
+          "query": "{ span.http.route =~ \".*$endpoint.*\" || span.http.target =~ \".*$endpoint.*\" || name =~ \".*$endpoint.*\" }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"
