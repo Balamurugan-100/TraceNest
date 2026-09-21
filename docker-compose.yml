@@ -263,6 +263,8 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor,tempoServiceMap
+      - GF_INSTALL_PLUGINS=marcusolsson-dynamictext-panel
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=marcusolsson-dynamictext-panel
     ports:
       - "3000:3000" # Grafana UI
     depends_on:
