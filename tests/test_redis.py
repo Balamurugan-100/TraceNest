@@ -371,44 +371,37 @@ def test_django_redis_cache_tracing(memory_exporter):
 
 
 def test_redis_integration_apply_patch_and_uninstrument(monkeypatch):
-    """Verify RedisIntegration wraps and unwraps Redis methods cleanly."""
+    """Verify RedisIntegration instruments and uninstruments cleanly."""
     import sys
     import types
+    from unittest.mock import MagicMock, patch
 
-    fake_redis_mod = types.ModuleType("redis")
-    fake_client_mod = types.ModuleType("redis.client")
+    dummy_redis = types.ModuleType("redis")
+    dummy_redis.VERSION = (2, 9, 0)
+    dummy_redis.__path__ = []
+    dummy_redis.Redis = MagicMock
+    dummy_redis.StrictRedis = MagicMock
+    monkeypatch.setitem(sys.modules, "redis", dummy_redis)
 
-    class DummyRedis:
-        def execute_command(self, *args, **kwargs):
-            return "DUMMY_OK"
-
-    class DummyPipeline:
-        def execute(self, *args, **kwargs):
-            return ["DUMMY_PIPE"]
-
-    fake_redis_mod.Redis = DummyRedis
-    fake_client_mod.Pipeline = DummyPipeline
-    fake_redis_mod.client = fake_client_mod
-
-    monkeypatch.setitem(sys.modules, "redis", fake_redis_mod)
-    monkeypatch.setitem(sys.modules, "redis.client", fake_client_mod)
+    import importlib
+    otel_redis = importlib.import_module("opentelemetry.instrumentation.redis")
 
     integ = RedisIntegration()
     assert integ.is_installed() is True
+    
+    with patch.object(otel_redis, "RedisInstrumentor") as mock_inst_cls:
+        mock_inst = MagicMock()
+        mock_inst.is_instrumented_by_opentelemetry = False
+        mock_inst_cls.return_value = mock_inst
 
-    integ._apply_patch()
-    assert integ._is_patched is True
-    assert len(integ._wrapped_targets) >= 2
+        integ._apply_patch()
+        assert integ._is_patched is True
+        mock_inst.instrument.assert_called_once()
 
-    # Verify DummyRedis is wrapped
-    client_instance = DummyRedis()
-    client_instance.connection_pool = MockConnectionPool()
-    res = client_instance.execute_command("PING")
-    assert res == "DUMMY_OK"
-
-    # Uninstrument
-    assert integ.uninstrument() is True
-    assert integ._is_patched is False
-    assert len(integ._wrapped_targets) == 0
+        # Uninstrument
+        mock_inst.is_instrumented_by_opentelemetry = True
+        assert integ.uninstrument() is True
+        assert integ._is_patched is False
+        mock_inst.uninstrument.assert_called_once()
 
 
