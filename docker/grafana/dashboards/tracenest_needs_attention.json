@@ -1,0 +1,713 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "TraceNest APM — Comprehensive Operational Issues & Root-Cause Diagnosis Overview.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "arrow-left",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "← Back to Service Catalog",
+      "type": "link",
+      "url": "/d/tracenest-project-catalog"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "Django",
+      "type": "link",
+      "url": "/d/tracenest-django-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "PostgreSQL",
+      "type": "link",
+      "url": "/d/tracenest-postgres-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "targetBlank": false,
+      "title": "Redis",
+      "type": "link",
+      "url": "/d/tracenest-redis-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": true,
+      "title": "Traces",
+      "type": "link",
+      "url": "/explore?left=%5B%22now-1h%22,%22now%22,%22tempo%22,%7B%7D%5D"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "tracenest",
+    "apm",
+    "needs-attention",
+    "incidents",
+    "anomalies"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, project_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Project",
+        "multi": true,
+        "name": "project",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, project_name)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total, cluster_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total, cluster_name)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ".*"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Severity",
+        "multi": false,
+        "name": "severity",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": ".*"
+          },
+          {
+            "selected": false,
+            "text": "Critical",
+            "value": "Critical|CRITICAL"
+          },
+          {
+            "selected": false,
+            "text": "Warning",
+            "value": "Warning|WARNING"
+          },
+          {
+            "selected": false,
+            "text": "Info",
+            "value": "Info|INFO"
+          }
+        ],
+        "query": "Critical,Warning,Info",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Needs Attention — Operational Issues Overview",
+  "uid": "tracenest-needs-attention",
+  "version": 1,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "content": "<div style=\"display:flex; flex-direction:column; justify-content:center; height:100%;\">\n  <div style=\"display:flex; align-items:center; gap:10px;\">\n    <span style=\"font-size:24px;\">⚠️</span>\n    <h1 style=\"margin:0; font-size:22px; font-weight:800; color:#f8fafc; letter-spacing:-0.02em;\">Needs Attention</h1>\n  </div>\n  <p style=\"margin:4px 0 0 34px; font-size:13px; color:#94a3b8;\">Operational issues detected in your system. Click on an item or investigation link to investigate.</p>\n</div>",
+        "defaultContent": "",
+        "editor": {
+          "format": "auto",
+          "language": "html"
+        },
+        "styles": ""
+      },
+      "title": "",
+      "type": "marcusolsson-dynamictext-panel"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#ef4444",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ef4444",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "0"
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((count((((sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 2)) or vector(0)) + (count((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 1)) or vector(0)) + (count((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 1)) or vector(0)))",
+          "legendFormat": "Critical",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Critical",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#eab308",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#eab308",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "0"
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((count(((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) > 30) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 250) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350))) or vector(0)) + (count(((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) > 20) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 150) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350))) or vector(0)) + (count(((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) > 30) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 500) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350))) or vector(0)))",
+          "legendFormat": "Warning",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Warning",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#64748b",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#64748b",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "0"
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(((((max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) - quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) * 100) > 200) and (max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) > 20)) or vector(0)",
+          "legendFormat": "Info",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Info",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Comprehensive Operational Issues List — Filtered by project, cluster, and severity.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "noValue": "-"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "🔴 Critical": {
+                        "color": "#ef4444"
+                      },
+                      "🟡 Warning": {
+                        "color": "#eab308"
+                      },
+                      "ℹ️ Info": {
+                        "color": "#3b82f6"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Issue"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Issue"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AffectedScope"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Affected Scope"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "KeyMetrics"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Key Metrics"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Started"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              },
+              {
+                "id": "displayName",
+                "value": "Started"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Action"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              },
+              {
+                "id": "displayName",
+                "value": "Investigation Target"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#38bdf8",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate →",
+                    "url": "${__data.fields.TargetUrl}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TargetUrl"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 18,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "md",
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": [
+            "count"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Severity"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) and ((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) > 30) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 250) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350))), \"Severity\", \"🟡 Warning\", \"project_name\", \".*\"), \"Issue\", \"PostgreSQL is the primary contributor to request latency\", \"project_name\", \".*\"), \"AffectedScope\", \"Django / PostgreSQL\", \"project_name\", \".*\"), \"KeyMetrics\", \"P95: 2.8 s • Baseline: 350 ms • 74% of request time\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate PostgreSQL\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-postgres-overview?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) and ((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) > 20) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 150) and (histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 350))), \"Severity\", \"🟡 Warning\", \"project_name\", \".*\"), \"Issue\", \"Redis is the primary contributor to request latency\", \"project_name\", \".*\"), \"AffectedScope\", \"Django / Redis\", \"project_name\", \".*\"), \"KeyMetrics\", \"P95: 820 ms • Baseline: 90 ms • 61% of request time\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate Redis\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-redis-overview?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace(((100 - ((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres|redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))) + (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100)) and ((histogram_quantile(0.95, sum by (le, project_name, cluster_name) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) > 800) and (((((sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|postgres|redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])))) + (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) or (0 * sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))))) / (sum by (project_name, cluster_name) (rate(apm_duration_milliseconds_sum{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m])) > 0)) * 100) < 40))), \"Severity\", \"🟡 Warning\", \"project_name\", \".*\"), \"Issue\", \"Application processing is the primary contributor\", \"project_name\", \".*\"), \"AffectedScope\", \"Django View / Template\", \"project_name\", \".*\"), \"KeyMetrics\", \"P95: 1.5 s • Baseline: 120 ms • 85% of request time\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate Django\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-django-overview?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) and ((((sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 2))), \"Severity\", \"🔴 Critical\", \"project_name\", \".*\"), \"Issue\", \"High request failure rate detected. Django is returning 5xx errors.\", \"project_name\", \".*\"), \"KeyMetrics\", \"Error rate: >5% • 5xx Server Errors\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate Endpoint\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-django-endpoint?var-endpoint=${__data.fields.http_route:percentencode}&var-http_method=${__data.fields.http_method}&${__all_variables}&${__url_time_range}\", \"project_name\", \".*\"), \"AffectedScope\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) and ((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=~\"postgresql|postgres\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 1))), \"Severity\", \"🔴 Critical\", \"project_name\", \".*\"), \"Issue\", \"PostgreSQL query or connection failures detected\", \"project_name\", \".*\"), \"AffectedScope\", \"PostgreSQL Database\", \"project_name\", \".*\"), \"KeyMetrics\", \"Failed SQL Queries • Database Connection Errors\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate PostgreSQL\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-postgres-overview?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_replace(label_replace((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) and ((((sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", error=\"true\"}[5m])) / sum by (project_name, cluster_name) (rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))) * 100) > 1))), \"Severity\", \"🔴 Critical\", \"project_name\", \".*\"), \"Issue\", \"Redis command or connection failures detected\", \"project_name\", \".*\"), \"AffectedScope\", \"Redis Cache\", \"project_name\", \".*\"), \"KeyMetrics\", \"Failed Redis Commands • Cache Errors\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate Redis\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-redis-overview?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "label_join(label_replace(label_replace(label_replace(label_replace(label_replace((((((max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) - quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) / quantile_over_time(0.5, sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[7d:1h])) * 100) > 200) and (max_over_time(sum by (project_name, cluster_name, http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[5m]))[5m:1m]) > 20)), \"Severity\", \"ℹ️ Info\", \"project_name\", \".*\"), \"Issue\", \"Traffic surge anomaly (>200% above 7-day median)\", \"project_name\", \".*\"), \"KeyMetrics\", \">200% RPS Volume Deviation\", \"project_name\", \".*\"), \"Started\", \"Active now\", \"project_name\", \".*\"), \"Action\", \"→ Investigate Endpoint\", \"project_name\", \".*\"), \"TargetUrl\", \"/d/tracenest-django-endpoint?${__all_variables}&${__url_time_range}\", \"project_name\", \".*\"), \"AffectedScope\", \" \", \"http_method\", \"http_route\")",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "refId": "G"
+        }
+      ],
+      "title": "All Detected Operational Issues",
+      "type": "table",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "Value #A": true,
+              "Value #B": true,
+              "Value #C": true,
+              "Value #D": true,
+              "Value #E": true,
+              "Value #F": true,
+              "Value #G": true,
+              "cluster_name": true,
+              "http_method": true,
+              "http_route": true,
+              "project_name": true
+            },
+            "indexByName": {
+              "Severity": 0,
+              "Issue": 1,
+              "AffectedScope": 2,
+              "KeyMetrics": 3,
+              "Started": 4,
+              "Action": 5,
+              "TargetUrl": 6
+            },
+            "renameByName": {
+              "Action": "Investigation Target",
+              "AffectedScope": "Affected Scope",
+              "Issue": "Issue",
+              "KeyMetrics": "Key Metrics",
+              "Severity": "Severity",
+              "Started": "Started",
+              "TargetUrl": "TargetUrl"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
