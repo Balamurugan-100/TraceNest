@@ -291,13 +291,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def postgres_slow(self, request):
         delay = float(request.query_params.get("delay", 1.5))
         db = request.query_params.get("db", "default")
-        from django.db import connections
+        from django.db import connection, connections
         target_conn = connections[db] if db in connections else connection
         with target_conn.cursor() as cursor:
             cursor.execute("SELECT pg_sleep(%s)", [delay])
-        products = Product.objects.using(db if db in connections else "default").all()[:5]
-        serializer = self.get_serializer(products, many=True)
-        return Response({"status": "slow_postgres_complete", "delay": delay, "database": db, "products": serializer.data})
+        try:
+            products = Product.objects.using(db if db in connections else "default").all()[:5]
+            serializer = self.get_serializer(products, many=True)
+            prod_data = serializer.data
+        except Exception:
+            prod_data = []
+        return Response({"status": "slow_postgres_complete", "delay": delay, "database": db, "products": prod_data})
 
     @action(detail=False, methods=["get"], url_path="external")
     def external_endpoint(self, request):

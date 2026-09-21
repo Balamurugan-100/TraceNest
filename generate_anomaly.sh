@@ -181,6 +181,7 @@ run_scenario_worker() {
       # Injects real slow PostgreSQL queries (pg_sleep) across DBs to trigger high Postgres P95 and >30% downstream duration
       send_req "GET" "/api/products/postgres-slow/?delay=${DELAY}" "" "PostgreSQL (default): Slow Query (${DELAY}s delay)"
       send_req "GET" "/api/products/postgres-slow/?db=slave1&delay=${DELAY}" "" "PostgreSQL (slave1): Slow Query (${DELAY}s delay)"
+      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(${DELAY})" "" "PostgreSQL: Raw SQL pg_sleep(${DELAY}s)"
       send_req "GET" "/api/products/" "" "Django: Product Catalog View"
       ;;
 

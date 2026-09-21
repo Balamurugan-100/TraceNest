@@ -7,6 +7,7 @@ worker_class = "gthread"
 threads = int(os.environ.get("GUNICORN_THREADS", "4"))
 timeout = 120
 keepalive = 5
+reload = True
 accesslog = "-"
 errorlog = "-"
 loglevel = "info"
