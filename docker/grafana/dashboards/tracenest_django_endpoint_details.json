@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM \u2014 Deep-dive endpoint performance, error breakdown, latency percentiles, downstream dependencies, and distributed flamegraph.",
+  "description": "Tracenest APM — Deep-dive endpoint performance, error breakdown, latency percentiles, downstream dependencies, and distributed flamegraph.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Back to Django Overview",
+      "title": "← Back to Django Overview",
       "type": "link",
       "url": "/d/tracenest-django-overview"
     },
@@ -23,7 +23,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "\u2190 Project Catalog",
+      "title": "← Project Catalog",
       "type": "link",
       "url": "/d/tracenest-project-catalog"
     },
@@ -60,58 +60,6 @@
   ],
   "templating": {
     "list": [
-      {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": "/api/products/",
-          "value": "/api/products/"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(apm_calls_total{span_name=\"django.request\"}, http_route)",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Endpoint",
-        "multi": false,
-        "name": "endpoint",
-        "options": [],
-        "query": "label_values(apm_calls_total{span_name=\"django.request\"}, http_route)",
-        "refresh": 2,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(apm_calls_total{span_name=\"django.request\", http_route=~\"$endpoint\"}, http_method)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "HTTP Method",
-        "multi": false,
-        "name": "http_method",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          }
-        ],
-        "query": "label_values(apm_calls_total{span_name=\"django.request\", http_route=~\"$endpoint\"}, http_method)",
-        "refresh": 2,
-        "sort": 1,
-        "type": "query"
-      },
       {
         "allValue": null,
         "current": {
@@ -179,6 +127,58 @@
         "type": "query"
       },
       {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "/api/products/",
+          "value": "/api/products/"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, http_route)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Endpoint",
+        "multi": false,
+        "name": "endpoint",
+        "options": [],
+        "query": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, http_route)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_route=~\"$endpoint\"}, http_method)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "HTTP Method",
+        "multi": false,
+        "name": "http_method",
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          }
+        ],
+        "query": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_route=~\"$endpoint\"}, http_method)",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -205,7 +205,7 @@
     ]
   },
   "timezone": "browser",
-  "title": "Django \u2014 Endpoint Details",
+  "title": "Django — Endpoint Details",
   "uid": "tracenest-django-endpoint",
   "version": 7,
   "panels": [
@@ -913,7 +913,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
+          "expr": "clamp_max(clamp_min(((sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0)) * 100, 0), 100)",
           "legendFormat": "External HTTP",
           "range": true,
           "refId": "C"
@@ -935,7 +935,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_max(clamp_min(100 - (((sum(rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|\ud83c\udf10.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"(?i)s3.*|.*boto.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0) * 100), 0), 100)",
+          "expr": "clamp_max(clamp_min(100 - (((sum(rate(apm_duration_milliseconds_sum{db_system=~\"postgresql|redis\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"HTTP.*|🌐.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])))) + (sum(rate(apm_duration_milliseconds_sum{span_name=~\"(?i)s3.*|.*boto.*\", http_route=~\"$endpoint\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) or (0 * sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]))))) / (sum(rate(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) > 0) * 100), 0), 100)",
           "legendFormat": "Django (Internal)",
           "range": true,
           "refId": "E"
@@ -1004,7 +1004,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "\ud83d\udd25 Open Flamegraph Waterfall in Tempo",
+                    "title": "🔥 Open Flamegraph Waterfall in Tempo",
                     "url": "/explore?left=%5B%22${__from}%22,%22${__to}%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D"
                   }
                 ]
