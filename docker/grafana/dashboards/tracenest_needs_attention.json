@@ -520,18 +520,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Unit"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 120
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "Investigation Target"
             },
             "properties": [
@@ -744,6 +732,8 @@
           "options": {
             "excludeByName": {
               "Time": true,
+              "MetricUnit": true,
+              "Unit": true,
               "BgColor": true,
               "BorderColor": true,
               "Color": true,
@@ -762,24 +752,37 @@
               "Severity": 0,
               "Headline": 1,
               "ImpactText": 2,
+              "Live Measured Value": 3,
               "Value": 3,
-              "MetricUnit": 4,
-              "Deviation": 5,
-              "BaselineText": 6,
-              "StartedText": 7,
-              "ActionText": 8,
-              "TargetUrl": 9,
-              "project_name": 10,
-              "cluster_name": 11,
-              "http_route": 12,
-              "http_method": 13
+              "Value #A": 3,
+              "Value #B": 3,
+              "Value #C": 3,
+              "Value #D": 3,
+              "Value #E": 3,
+              "Value #F": 3,
+              "Value #G": 3,
+              "Deviation": 4,
+              "BaselineText": 5,
+              "StartedText": 6,
+              "ActionText": 7,
+              "TargetUrl": 8,
+              "project_name": 9,
+              "cluster_name": 10,
+              "http_route": 11,
+              "http_method": 12
             },
             "renameByName": {
               "Severity": "Severity",
               "Headline": "Issue",
               "ImpactText": "Affected Scope",
               "Value": "Live Measured Value",
-              "MetricUnit": "Unit",
+              "Value #A": "Live Measured Value",
+              "Value #B": "Live Measured Value",
+              "Value #C": "Live Measured Value",
+              "Value #D": "Live Measured Value",
+              "Value #E": "Live Measured Value",
+              "Value #F": "Live Measured Value",
+              "Value #G": "Live Measured Value",
               "Deviation": "Deviation",
               "BaselineText": "Baseline",
               "StartedText": "Started",
