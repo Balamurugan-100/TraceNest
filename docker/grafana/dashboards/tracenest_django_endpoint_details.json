@@ -207,7 +207,7 @@
   "timezone": "browser",
   "title": "Django \u2014 Endpoint Details",
   "uid": "tracenest-django-endpoint",
-  "version": 6,
+  "version": 7,
   "panels": [
     {
       "collapsed": false,
@@ -620,21 +620,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "p75"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#6366f1",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "p90"
             },
             "properties": [
@@ -671,37 +656,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#a855f7",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "p99.9"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#f97316",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Max"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#ec4899",
+                  "fixedColor": "#ef4444",
                   "mode": "fixed"
                 }
               }
@@ -753,22 +708,10 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.75, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) by (le)) / 1000",
-          "legendFormat": "p75",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "exemplar": true,
           "expr": "histogram_quantile(0.90, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) by (le)) / 1000",
           "legendFormat": "p90",
           "range": true,
-          "refId": "C"
+          "refId": "B"
         },
         {
           "datasource": {
@@ -780,7 +723,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) by (le)) / 1000",
           "legendFormat": "p95",
           "range": true,
-          "refId": "D"
+          "refId": "C"
         },
         {
           "datasource": {
@@ -792,31 +735,7 @@
           "expr": "histogram_quantile(0.99, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) by (le)) / 1000",
           "legendFormat": "p99",
           "range": true,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "histogram_quantile(0.999, sum(rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval])) by (le)) / 1000",
-          "legendFormat": "p99.9",
-          "range": true,
-          "refId": "F"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "(max_over_time(apm_duration_milliseconds_sum{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) / (max_over_time(apm_duration_milliseconds_count{span_name=\"django.request\", http_route=~\"$endpoint\", http_method=~\"$http_method\", project_name=~\"$project\", cluster_name=~\"$cluster\"}[$__rate_interval]) > 0)) / 1000",
-          "legendFormat": "Max",
-          "range": true,
-          "refId": "G"
+          "refId": "D"
         }
       ],
       "title": "Latency",
