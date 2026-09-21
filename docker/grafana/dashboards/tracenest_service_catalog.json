@@ -706,7 +706,7 @@
         {
           "id": "joinByField",
           "options": {
-            "byField": "Component",
+            "byField": "Service",
             "mode": "outer"
           }
         },
@@ -1149,18 +1149,6 @@
       ],
       "title": "+ % Time Spent by Downstream Service",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 30
-      },
-      "id": 400,
-      "title": "⚠️ Traffic / RPS Baseline Anomalies",
-      "type": "row"
     },
     {
       "datasource": {
