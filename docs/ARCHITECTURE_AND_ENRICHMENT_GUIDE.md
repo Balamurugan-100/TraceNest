@@ -209,17 +209,15 @@ TraceNest's PostgreSQL integration ([`src/tracenest/integrations/postgres/`](fil
 
 ### C. Redis Command & Pipeline Tracing
 
-TraceNest's Redis integration ([`src/tracenest/integrations/redis/`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/src/tracenest/integrations/redis/)) handles both synchronous and asynchronous `redis-py` clients:
+TraceNest's Redis integration ([`src/tracenest/integrations/redis/`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/src/tracenest/integrations/redis/)) uses the official OpenTelemetry Redis instrumentor:
 
-1. **Command Formatting & Masking** ([`client.py`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/src/tracenest/integrations/redis/client.py)):
-   - Redacts sensitive commands (`AUTH`, `CONFIG SET`, `CONFIG REQUIREPASS`).
-   - Sanitizes IPv4/IPv6 addresses from keys and parameters using regex masking (`_IPV4_RE`, `_IPV6_RE`).
-   - Truncates long arguments (> 256 bytes) and long statements (> 2048 bytes).
-2. **Pipeline Execution**:
-   - Formats multi-command pipelines into concise statements (e.g. `MULTI/EXEC (3 commands): GET, SET, INCR`).
-   - Sets `db.redis.pipeline_length`.
-3. **Re-Entrancy Guard**:
-   - Attaches `_tp_in_exec` to the Redis instance to prevent recursive span creation when pipelines execute internal sub-commands.
+1. **Official Redis Instrumentor ([`opentelemetry.instrumentation.redis.RedisInstrumentor`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/src/tracenest/integrations/redis/integration.py))**:
+   - Leverages standard `RedisInstrumentor().instrument()` to hook into synchronous and asynchronous `redis-py` clients.
+   - Emits canonical command span names (`GET`, `SET`, `HGETALL`, `PING`, etc.) with `db.system="redis"`, `db.statement`, and `net.peer.name` / `net.peer.port`.
+2. **Spanmetrics & APM Parity**:
+   - Spans are processed by OpenTelemetry Collector `spanmetrics` to produce `apm_calls_total{db_system="redis", span_name="GET"}`, `apm_duration_milliseconds_bucket`, and `apm_duration_milliseconds_sum`.
+   - Grafana Redis Overview and Redis Command Detail dashboards seamlessly map `span_name` for top throughput analysis, p50–p99 latency quantiles, error tracking, and Tempo trace waterfall drill-downs.
+
 
 ---
 
