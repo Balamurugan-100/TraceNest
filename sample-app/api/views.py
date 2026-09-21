@@ -276,13 +276,21 @@ class ProductViewSet(viewsets.ModelViewSet):
     def redis_slow(self, request):
         delay = float(request.query_params.get("delay", 1.0))
         try:
-            from opentelemetry import trace
-            tracer = trace.get_tracer(__name__)
-            with tracer.start_as_current_span("KEYS * (SLOW)", kind=trace.SpanKind.CLIENT) as span:
-                span.set_attribute("db.system", "redis")
-                span.set_attribute("db.statement", f"KEYS * (SLOW {delay}s)")
-                time.sleep(delay)
-                cache.set("slow_key", "slow_val", timeout=60)
+            from django_redis import get_redis_connection
+            r = get_redis_connection("default")
+            # Lua script loop to simulate slow Redis key scanning / complex execution
+            lua_delay = """
+            local t0 = redis.call('TIME')
+            local start = t0[1] + t0[2]/1000000
+            while true do
+                local t1 = redis.call('TIME')
+                local now = t1[1] + t1[2]/1000000
+                if now - start >= tonumber(ARGV[1]) then break end
+            end
+            return 1
+            """
+            r.eval(lua_delay, 0, delay)
+            cache.set("slow_key", "slow_val", timeout=60)
         except Exception:
             time.sleep(delay)
         return Response({"status": "slow_redis_complete", "delay": delay})
