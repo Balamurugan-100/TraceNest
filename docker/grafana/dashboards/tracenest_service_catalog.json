@@ -210,7 +210,7 @@
   "timezone": "browser",
   "title": "TraceNest APM — Service Catalog",
   "uid": "tracenest-project-catalog",
-  "version": 33,
+  "version": 34,
   "panels": [
     {
       "datasource": {
@@ -311,42 +311,6 @@
         {
           "id": "merge",
           "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Observed Value": true,
-              "Time": true,
-              "Value": true,
-              "Value #A": true,
-              "Value #B": true,
-              "Value #C": true,
-              "Value #D": true,
-              "Value #E": true,
-              "Value #F": true,
-              "Value #G": true,
-              "Value #H": true,
-              "cluster_name": true,
-              "http_method": true,
-              "http_route": true,
-              "project_name": true
-            },
-            "indexByName": {
-              "Severity": 0,
-              "Problem": 1,
-              "Impact": 2,
-              "Action": 3,
-              "TargetUrl": 4
-            },
-            "renameByName": {
-              "Action": "Investigation Target",
-              "Impact": "Impact Scope",
-              "Problem": "Problem Diagnosis",
-              "Severity": "Severity",
-              "TargetUrl": "TargetUrl"
-            }
-          }
         }
       ]
     },
