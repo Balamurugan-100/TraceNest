@@ -176,6 +176,7 @@ run_scenario_worker() {
   local end_time=$(( $(date +%s) + DURATION ))
 
   while [ $(date +%s) -lt $end_time ]; do
+    case "$SCENARIO" in
     postgres)
       # Injects real slow PostgreSQL queries (pg_sleep) across DBs to trigger high Postgres P95 and >30% downstream duration
       send_req "GET" "/api/products/postgres-slow/?delay=${DELAY}" "" "PostgreSQL (default): Slow Query (${DELAY}s delay)"
