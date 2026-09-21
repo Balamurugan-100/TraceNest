@@ -319,7 +319,7 @@ run_traffic_cycle() {
   # =========================================================================
   if [ "$GOAL_UI" -eq 1 ]; then
     echo -e "   ${C_CYAN}🎯 Goal UI Pattern: PostgreSQL (~49%), Django (~30%), Downstream (~21%)...${C_RESET}"
-    send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(0.06)%2C%20COUNT(*)%20FROM%20api_product" "" "Postgres Primary: pg_sleep(0.06s) Query (49% Time)"
+    send_req "GET" "/api/products/postgres-slow/?delay=0.06" "" "Postgres Primary: pg_sleep(0.06s) Query (49% Time)"
     send_req "GET" "/api/products/" "" "Django: Products List Handler (30% Time)"
     # send_req "GET" "/api/products/external/" "" "HTTP Client: External Downstream Call (21% Time)"
     return
@@ -338,9 +338,9 @@ run_traffic_cycle() {
 
     if [ "$SLOW_POSTGRES" -eq 1 ]; then
       echo -e "   ${C_YELLOW}🐢 Intentional Slowdown: PostgreSQL Database Query Delay (pg_sleep 1.5s)...${C_RESET}"
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(1.5)%2C%20COUNT(*)%20FROM%20api_product" "" "Postgres Primary: pg_sleep(1.5s) SQL Query"
+      send_req "GET" "/api/products/postgres-slow/?delay=1.5" "" "Postgres Primary: pg_sleep(1.5s) SQL Query"
       send_req "POST" "/api/multi-db/?db=slave1&action=insert" "" "Postgres Slave1: Insert Record"
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(1.0)%2C%20version()" "" "Postgres Primary: pg_sleep(1.0s) DB Info"
+      send_req "GET" "/api/products/postgres-slow/?db=slave1&delay=1.0" "" "Postgres Slave1: pg_sleep(1.0s) DB Info"
       send_req "POST" "/api/db-tx/" "{\"operations\": 10}" "Postgres Primary: Heavy 10-Statement DB Transaction"
     fi
 

@@ -287,6 +287,18 @@ class ProductViewSet(viewsets.ModelViewSet):
             time.sleep(delay)
         return Response({"status": "slow_redis_complete", "delay": delay})
 
+    @action(detail=False, methods=["get"], url_path="postgres-slow")
+    def postgres_slow(self, request):
+        delay = float(request.query_params.get("delay", 1.5))
+        db = request.query_params.get("db", "default")
+        from django.db import connections
+        target_conn = connections[db] if db in connections else connection
+        with target_conn.cursor() as cursor:
+            cursor.execute("SELECT pg_sleep(%s)", [delay])
+        products = Product.objects.using(db if db in connections else "default").all()[:5]
+        serializer = self.get_serializer(products, many=True)
+        return Response({"status": "slow_postgres_complete", "delay": delay, "database": db, "products": serializer.data})
+
     @action(detail=False, methods=["get"], url_path="external")
     def external_endpoint(self, request):
         from django.conf import settings
@@ -467,8 +479,12 @@ class RawSQLView(APIView):
         query = request.query_params.get("query", "SELECT 1 as test")
         with connection.cursor() as cursor:
             cursor.execute(query)
-            columns = [col[0] for col in cursor.description]
-            rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            if cursor.description:
+                columns = [col[0] for col in cursor.description]
+                rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            else:
+                columns = []
+                rows = []
         return Response({"query": query, "rows": rows, "row_count": len(rows)})
 
 

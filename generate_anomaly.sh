@@ -176,11 +176,10 @@ run_scenario_worker() {
   local end_time=$(( $(date +%s) + DURATION ))
 
   while [ $(date +%s) -lt $end_time ]; do
-    case "$SCENARIO" in
     postgres)
-      # Injects slow SQL queries across DBs to trigger high Postgres P95 and >40% downstream duration
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(${DELAY})%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL (default): pg_sleep(${DELAY}s) Slow Query"
-      send_req "GET" "/api/products/read-slave1/" "" "PostgreSQL (slave1): Read Products"
+      # Injects real slow PostgreSQL queries (pg_sleep) across DBs to trigger high Postgres P95 and >30% downstream duration
+      send_req "GET" "/api/products/postgres-slow/?delay=${DELAY}" "" "PostgreSQL (default): Slow Query (${DELAY}s delay)"
+      send_req "GET" "/api/products/postgres-slow/?db=slave1&delay=${DELAY}" "" "PostgreSQL (slave1): Slow Query (${DELAY}s delay)"
       send_req "GET" "/api/products/" "" "Django: Product Catalog View"
       ;;
 
@@ -222,7 +221,7 @@ run_scenario_worker() {
 
     chaos)
       # Multi-issue simultaneous chaos
-      send_req "GET" "/api/raw-sql/?query=SELECT%20pg_sleep(${DELAY})%2C%20COUNT(*)%20FROM%20api_product" "" "PostgreSQL: Slow Query (Chaos)"
+      send_req "GET" "/api/products/postgres-slow/?delay=${DELAY}" "" "PostgreSQL: Slow Query (Chaos)"
       send_req "GET" "/api/products/redis-slow/?delay=${DELAY}" "" "Redis: Slow Cache (Chaos)"
       local roll=$(( RANDOM % 100 + 1 ))
       if [ "$roll" -le "$ERROR_RATE" ]; then
