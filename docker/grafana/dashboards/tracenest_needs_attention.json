@@ -724,8 +724,10 @@
       "type": "table",
       "transformations": [
         {
-          "id": "merge",
-          "options": {}
+          "id": "concatenate",
+          "options": {
+            "frameNameMode": "drop"
+          }
         },
         {
           "id": "organize",
@@ -754,13 +756,6 @@
               "ImpactText": 2,
               "Live Measured Value": 3,
               "Value": 3,
-              "Value #A": 3,
-              "Value #B": 3,
-              "Value #C": 3,
-              "Value #D": 3,
-              "Value #E": 3,
-              "Value #F": 3,
-              "Value #G": 3,
               "Deviation": 4,
               "BaselineText": 5,
               "StartedText": 6,
@@ -776,13 +771,6 @@
               "Headline": "Issue",
               "ImpactText": "Affected Scope",
               "Value": "Live Measured Value",
-              "Value #A": "Live Measured Value",
-              "Value #B": "Live Measured Value",
-              "Value #C": "Live Measured Value",
-              "Value #D": "Live Measured Value",
-              "Value #E": "Live Measured Value",
-              "Value #F": "Live Measured Value",
-              "Value #G": "Live Measured Value",
               "Deviation": "Deviation",
               "BaselineText": "Baseline",
               "StartedText": "Started",
