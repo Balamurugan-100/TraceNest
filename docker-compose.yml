@@ -9,12 +9,20 @@ services:
       POSTGRES_DB: django_otel
       POSTGRES_USER: django
       POSTGRES_PASSWORD: django
+    # Force PostgreSQL to bypass RAM cache and hit disk on every query
+    command: [ "postgres", "-c", "shared_buffers=128kB", "-c", "work_mem=64kB", "-c", "synchronous_commit=on", "-c", "fsync=on" ]
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Cross-platform CPU & Memory throttling (works on macOS, Linux, Windows)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.35'
+          memory: 128M
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U django -d django_otel"]
+      test: [ "CMD-SHELL", "pg_isready -U django -d django_otel" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +37,7 @@ services:
       - ./sample-app/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
       - ./sample-app/pgbouncer/pg_hba.conf:/etc/pgbouncer/pg_hba.conf:ro
       - pgbouncer_log:/var/log/pgbouncer
-    entrypoint: ["/opt/pgbouncer/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    entrypoint: [ "/opt/pgbouncer/pgbouncer", "/etc/pgbouncer/pgbouncer.ini" ]
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,10 +47,18 @@ services:
   redis:
     image: redis:7
     container_name: django-otel-redis
+    # Force Redis to flush every write synchronously to disk (AOF appendfsync always)
+    command: [ "redis-server", "--appendonly", "yes", "--appendfsync", "always" ]
     ports:
       - "6379:6379"
+    # Limit Redis single-threaded event loop to 2% of 1 CPU core (0.02)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.02'
+          memory: 64M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -60,7 +76,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -80,7 +96,7 @@ services:
     volumes:
       - slave1_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave1"]
+      test: [ "CMD-SHELL", "pg_isready -U django -d django_otel_slave1" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -97,7 +113,7 @@ services:
     volumes:
       - slave2_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave2"]
+      test: [ "CMD-SHELL", "pg_isready -U django -d django_otel_slave2" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -114,7 +130,7 @@ services:
     volumes:
       - slave3_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U django -d django_otel_slave3"]
+      test: [ "CMD-SHELL", "pg_isready -U django -d django_otel_slave3" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -208,7 +224,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: tp-otel-collector
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
     volumes:
       - ./docker/otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
@@ -223,7 +239,7 @@ services:
   tempo:
     image: grafana/tempo:2.4.1
     container_name: tp-tempo
-    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
     volumes:
       - ./docker/tempo/tempo-config.yaml:/etc/tempo/tempo.yaml:ro
       - tempo_data:/var/tempo
@@ -263,6 +279,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor,tempoServiceMap
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
       - GF_INSTALL_PLUGINS=marcusolsson-dynamictext-panel
       - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=marcusolsson-dynamictext-panel
     ports:

@@ -1,0 +1,421 @@
+# TraceNest PoC — Decision Log
+
+This document records the key technical decisions made during the TraceNest APM PoC and the reasoning behind them.
+
+Each decision captures **what was chosen, why it was chosen, and the trade-offs introduced**.
+
+---
+
+## Decision 1 — Use OpenTelemetry as the telemetry foundation
+
+**Why?**
+
+OpenTelemetry provides vendor-neutral APIs, SDKs, telemetry formats, and context propagation. The PoC uses OTLP for telemetry transport and W3C Trace Context for distributed tracing.
+
+This keeps the instrumentation layer independent from the backend. The same telemetry can be routed to systems such as Tempo, Jaeger, or other OTLP-compatible backends without rewriting application instrumentation.
+
+**Trade-off:**
+OpenTelemetry introduces additional infrastructure and requires us to follow its data model and conventions.
+
+---
+
+## Decision 2 — Use custom Django instrumentation
+
+**Why?**
+
+The standard instrumentation provides basic Django tracing, but the PoC requires deeper application visibility.
+
+Custom instrumentation allows us to capture:
+
+* Normalized HTTP routes
+* Middleware execution
+* Views and DRF actions
+* Template rendering
+* Cache operations
+* Authentication operations
+* Downstream dependency context
+
+**Trade-off:**
+We now own part of the Django instrumentation layer and must validate it when upgrading Django.
+
+---
+
+## Decision 3 — Use resolved Django routes instead of raw URLs
+
+**Why?**
+
+A raw URL such as:
+
+```text
+/api/courses/12345/
+```
+
+can create a separate metric dimension for every course.
+
+Using the resolved route:
+
+```text
+/api/courses/{id}/
+```
+
+keeps telemetry dimensions bounded and makes endpoint-level metrics more useful.
+
+
+---
+
+## Decision 4 — Keep route context available during request execution
+
+**Why?**
+
+The route must be available while the request is executing, not only when the request finishes.
+
+This allows downstream spans to inherit:
+
+```text
+http.route=/api/courses/{id}/
+```
+
+For example:
+
+```text
+HTTP Request
+ ├── Django View
+ ├── PostgreSQL
+ └── Redis
+```
+
+All can be associated with the same endpoint.
+
+OpenTelemetry's context model is specifically designed to carry execution-scoped information across related operations.
+
+**Trade-off:**
+Incorrect context lifecycle handling could result in attributes leaking between requests, so context cleanup must be reliable.
+
+---
+
+## Decision 5 — Build custom PostgreSQL instrumentation
+
+**Why?**
+
+Basic database tracing is not enough for this PoC.
+
+We need to understand:
+
+* Which database handled the query
+* Primary vs replica
+* PgBouncer involvement
+* Query execution time
+* Sanitized query information
+
+This allows database latency to be investigated in the context of the application's infrastructure topology.
+
+**Trade-off:**
+Database-driver behavior becomes part of our instrumentation surface and requires compatibility testing.
+
+---
+
+## Decision 6 — Identify PgBouncer separately from PostgreSQL
+
+**Why?**
+
+A slow database operation does not necessarily mean PostgreSQL itself is slow. Connection-pool contention (waiting for an available server connection) occurs before the query reaches PostgreSQL.
+
+By identifying PgBouncer connections separately, we can distinguish:
+
+```text
+Application
+    ↓
+PgBouncer wait (Pool Contention / Queue)
+    ↓
+PostgreSQL execution (Engine / Query Execution)
+```
+
+**How We Detect It:**
+1. **Connection Metadata Inspection**: At cursor execution time, `is_pgbouncer_connection()` inspects Django's active database connection settings:
+   - Evaluates whether `db_port == 6432` or the host name matches `pgbouncer`.
+2. **Explicit Span Attribution**:
+   - Injects `db.connection.pool="pgbouncer"` and `peer.service="pgbouncer"` into span attributes.
+   - Distinct visual naming: Prefixes the span with the **`🔵`** blue icon (`🔵 SELECT api_product...`) rather than the direct database icon (**`🐘`**).
+3. **Collector-Side Pool Metrics**:
+   - The OTel Collector runs a dedicated `postgresql/pgbouncer` receiver to scrape pool usage stats (active/waiting clients, server connections), correlating pool metrics with trace wait times.
+
+---
+
+## Decision 7 — Identify primary and replica database roles
+
+**Why?**
+
+Database performance needs to be analyzed by topology.
+
+A slow query against a read replica has a different investigation path from a slow query against the primary database.
+
+The PoC therefore attaches database-role information to database spans where it can be determined reliably.
+
+**Trade-off:**
+Role detection depends on deployment configuration and must remain configurable rather than relying entirely on host-name conventions.
+
+---
+
+## Decision 8 — Sanitize SQL before exporting telemetry
+
+**Why?**
+
+Raw SQL can contain sensitive values and can also create unnecessary query cardinality.
+
+For example:
+
+```sql
+SELECT * FROM users WHERE id = 12345
+```
+
+can be represented as:
+
+```sql
+SELECT * FROM users WHERE id = ?
+```
+
+The goal is to preserve the query shape without exporting literal values.
+
+**Trade-off:**
+SQL sanitization is not a complete security boundary. It must be tested against different SQL syntax and should not be treated as a guarantee that every sensitive value will always be removed.
+
+---
+
+## Decision 9 — Use lightweight Redis instrumentation
+
+**Why?**
+
+Redis has clear operation boundaries, so it does not require the same depth of customization as Django or PostgreSQL.
+
+The integration focuses on useful metadata such as:
+
+* Redis command
+* Pipeline information
+* Operation timing
+* Sensitive argument handling
+
+**Trade-off:**
+Some internal Redis-client behavior may remain invisible.
+
+---
+
+## Decision 10 — Use lightweight outbound HTTP instrumentation
+
+**Why?**
+
+Outbound HTTP calls are important dependency spans, but they do not require a completely custom HTTP client implementation.
+
+The wrapper captures:
+
+* HTTP method
+* Destination
+* Duration
+* Trace context
+* Sanitized URL information
+
+W3C Trace Context provides the standard mechanism for propagating tracing information between services.
+
+**Trade-off:**
+The instrumentation remains dependent on the behavior of the underlying HTTP client.
+
+---
+
+## Decision 11 — Use lightweight Boto3 instrumentation
+
+**Why?**
+
+AWS operations need to appear as dependency spans, but the PoC does not require a custom AWS telemetry engine.
+
+The integration captures useful information such as:
+
+* AWS service
+* Operation
+* Relevant resource information
+* Duration
+
+**Trade-off:**
+The integration must be tested against the Boto3 APIs and operations we actually use.
+
+---
+
+## Decision 12 — Generate span metrics in the Collector
+
+**Why?**
+
+The application already produces spans containing timing and status information.
+
+Instead of maintaining another metric-calculation system inside every Python process, the Collector can derive request, error, and duration metrics from spans using the `spanmetrics` connector. The connector is specifically designed to aggregate RED metrics from span data.
+
+The PoC architecture is therefore:
+
+```text
+Application
+     │
+     │ Traces
+     ▼
+OTel Collector
+     │
+     ├── Tempo
+     │
+     └── Span Metrics
+            │
+            ▼
+        Prometheus
+```
+
+**Trade-off:**
+The Collector becomes an important part of the metrics pipeline and must be sized and operated accordingly.
+
+---
+
+## Decision 13 — Keep telemetry failures isolated from the application
+
+**Why?**
+
+Observability should not become a prerequisite for application availability.
+
+If the Collector is unavailable because of:
+
+* Network failure
+* DNS failure
+* Collector restart
+* Backend failure
+* Export timeout
+
+the application should continue processing requests.
+
+The PoC therefore wraps telemetry export with failure handling.
+
+**Trade-off:**
+Isolation means telemetry can be lost when the telemetry pipeline is unavailable. Reliability and loss behavior must therefore be measured separately.
+
+---
+
+## Decision 14 — Protect instrumentation from recursive calls
+
+**Why?**
+
+Instrumentation wrappers can call other methods that are themselves instrumented.
+
+Without protection:
+
+```text
+wrapper A
+  ↓
+method A
+  ↓
+method B
+  ↓
+wrapper B
+  ↓
+method A
+  ↓
+...
+```
+
+can produce duplicate spans or recursive instrumentation.
+
+A reentrancy guard ensures that only the intended outer operation creates the span.
+
+**Trade-off:**
+The guard must be scoped correctly so legitimate nested operations are not accidentally hidden.
+
+---
+
+## Decision 15 — Use Prometheus exemplars for metric-to-trace navigation
+
+**Why?**
+
+Metrics tell us **that** something is wrong; traces help explain **why**.
+
+Prometheus exemplars provide a link between an aggregated metric measurement and a representative trace. Grafana supports using exemplars to jump from a Prometheus metric directly to a trace in Tempo.
+
+The intended workflow is:
+
+```text
+Metric spike
+     ↓
+Exemplar
+     ↓
+Trace ID
+     ↓
+Tempo
+     ↓
+Trace waterfall
+```
+
+**Trade-off:**
+This requires consistent configuration between the metrics system, Grafana, and tracing backend.
+
+---
+
+## Decision 16 — Sanitize telemetry before it leaves the application
+
+**Why?**
+
+Sensitive data must be removed at the point of origin rather than relying on downstream collection layers.
+
+The PoC applies sanitization before telemetry is exported:
+
+* **SQL Queries**: Replaces numerical literals, string constants, and UUIDs with `%s` parameters to protect customer data and normalize query summaries.
+* **URLs**: Strips basic-auth credentials and sensitive URL query tokens.
+* **Redis**: Redacts authentication parameters (`AUTH`, `CONFIG`, password arguments).
+
+---
+
+## Decision 17 — Use traces as the primary source for application performance analysis
+
+**Why?**
+
+A distributed trace preserves the exact causal execution tree between an incoming HTTP request and all downstream operations:
+
+```text
+HTTP Request
+ ├── Django Middleware
+ ├── Django View
+ ├── PostgreSQL Query (Primary / Replica / PgBouncer)
+ ├── Redis Command
+ └── External HTTP API
+```
+
+Traces serve as the primary diagnostic signal for root-cause analysis (answering *why* a request was slow), while Prometheus provides aggregated time-series metrics (answering *what* the overall error rate and throughput are).
+
+---
+
+## Decision 18 — Treat this architecture as a PoC validation, not a production commitment
+
+**Why?**
+
+The PoC demonstrates technical feasibility and APM feature parity with commercial tools, but production adoption requires additional operational validation.
+
+Key areas to measure before full production rollout:
+* Application runtime CPU/latency overhead under high concurrency
+* Collector memory stability and buffer tuning under traffic bursts
+* Production sampling rates (e.g. 5–10% baseline vs. 100% on 5xx errors)
+* Multi-tenant backend storage sizing (S3/GCS object storage for Tempo)
+
+---
+
+# Decision Summary
+
+| Area                      | PoC Decision                        | Primary Benefit |
+| :------------------------ | :---------------------------------- | :-------------- |
+| **Telemetry Standard**    | OpenTelemetry (OTel)                | Vendor neutrality & open CNCF ecosystem |
+| **Transport Protocol**    | OTLP HTTP / gRPC                    | Universal telemetry format |
+| **Context Propagation**   | W3C Trace Context (`traceparent`)   | Seamless distributed trace continuation |
+| **Django Framework**      | Custom Instrumentation              | Low-cardinality routes, middleware & template waterfalls |
+| **Route Normalization**   | Django URL Resolver Matching        | Eliminates Prometheus metric series explosions |
+| **Route Attribution**     | In-flight `contextvars`             | Allows downstream DB/Redis metrics to filter by route |
+| **PostgreSQL Database**   | Custom Cursor Wrapper               | Primary vs. Replica role tagging & SQL sanitization |
+| **PgBouncer Pool**        | Dedicated Topology & `🔵` Icon Tag  | Distinguishes pool wait from Postgres query execution |
+| **Redis Cache**           | Lightweight Wrapper                 | Command timing, pipeline depth & sensitive arg redaction |
+| **Outbound HTTP Calls**   | Lightweight `requests` Wrapper      | Outbound W3C header injection & visual `🌐` naming |
+| **AWS SDK (Boto3)**       | Lightweight Wrapper                 | Service, operation, and bucket identification |
+| **Metric Generation**     | Server-Side `spanmetrics` Connector | Zero Python CPU/memory overhead for metric math |
+| **Failure Isolation**     | `SafeSpanExporter` Wrap             | Telemetry errors NEVER crash or slow down user requests |
+| **Reentrancy Safety**     | `reentrant_guard` Context Manager   | Prevents infinite recursion & duplicate span trees |
+| **Spike-to-Trace UX**     | Prometheus Exemplars $\rightarrow$ Tempo | Instant jump from metric spike to trace waterfall |
+| **Data Privacy**          | Pre-Export Sanitization             | PII & credential scrubbing at the application boundary |
+| **Primary Signal**        | Traces (Tempo) + Metrics (Prometheus)| Comprehensive root-cause isolation & high-level health |
+| **PoC Objective**         | Technical Feasibility & Validation  | Validates Datadog APM replacement viability |
+

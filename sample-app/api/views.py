@@ -274,11 +274,12 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="redis-slow")
     def redis_slow(self, request):
-        delay = float(request.query_params.get("delay", 1.0))
+        delay = float(request.query_params.get("delay", 1.5))
+        redis_delay = max(0.01, delay * 0.75)
+        app_delay = max(0.005, delay * 0.25)
         try:
             from django_redis import get_redis_connection
             r = get_redis_connection("default")
-            # Lua script loop to simulate slow Redis key scanning / complex execution
             lua_delay = """
             local t0 = redis.call('TIME')
             local start = t0[1] + t0[2]/1000000
@@ -289,27 +290,42 @@ class ProductViewSet(viewsets.ModelViewSet):
             end
             return 1
             """
-            r.eval(lua_delay, 0, delay)
+            r.eval(lua_delay, 0, redis_delay)
             cache.set("slow_key", "slow_val", timeout=60)
         except Exception:
-            time.sleep(delay)
+            time.sleep(redis_delay)
+
+        t_end = time.time() + app_delay
+        dummy_calc = 0
+        while time.time() < t_end:
+            dummy_calc += sum(i * i for i in range(100))
+
         return Response({"status": "slow_redis_complete", "delay": delay})
 
     @action(detail=False, methods=["get"], url_path="postgres-slow")
     def postgres_slow(self, request):
         delay = float(request.query_params.get("delay", 1.5))
         db = request.query_params.get("db", "default")
+        db_delay = max(0.01, delay * 0.75)
+        app_delay = max(0.005, delay * 0.25)
+
         from django.db import connection, connections
         target_conn = connections[db] if db in connections else connection
         with target_conn.cursor() as cursor:
-            cursor.execute("SELECT pg_sleep(%s)", [delay])
+            cursor.execute("SELECT pg_sleep(%s)", [db_delay])
+
+        t_end = time.time() + app_delay
+        dummy_calc = 0
+        while time.time() < t_end:
+            dummy_calc += sum(i * i for i in range(100))
+
         try:
-            products = Product.objects.using(db if db in connections else "default").all()[:5]
+            products = Product.objects.using(db if db in connections else "default").all()[:20]
             serializer = self.get_serializer(products, many=True)
             prod_data = serializer.data
         except Exception:
             prod_data = []
-        return Response({"status": "slow_postgres_complete", "delay": delay, "database": db, "products": prod_data})
+        return Response({"status": "slow_postgres_complete", "delay": delay, "db_delay": db_delay, "app_delay": app_delay, "database": db, "products": prod_data})
 
     @action(detail=False, methods=["get"], url_path="external")
     def external_endpoint(self, request):

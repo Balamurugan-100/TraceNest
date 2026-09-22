@@ -38,7 +38,7 @@
       "url": "/d/tracenest-redis-overview"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -49,6 +49,24 @@
   ],
   "templating": {
     "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
       {
         "allValue": null,
         "current": {
@@ -62,7 +80,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(apm_calls_total, cluster_name)",
         "hide": 0,
@@ -95,9 +113,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(apm_calls_total{span_name=\"django.request\"}, project_name)",
+        "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\"}, project_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Project",
@@ -110,7 +128,7 @@
             "value": "$__all"
           }
         ],
-        "query": "label_values(apm_calls_total{span_name=\"django.request\"}, project_name)",
+        "query": "label_values(apm_calls_total{cluster_name=~\"$cluster\"}, project_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -124,9 +142,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(apm_calls_total{span_name=\"django.request\"}, http_method)",
+        "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\"}, http_method)",
         "hide": 0,
         "includeAll": true,
         "label": "HTTP Method",
@@ -139,7 +157,7 @@
             "value": "$__all"
           }
         ],
-        "query": "label_values(apm_calls_total{span_name=\"django.request\"}, http_method)",
+        "query": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\"}, http_method)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -148,18 +166,14 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, http_route)",
+        "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", http_method=~\"$http_method\"}, http_route)",
         "hide": 0,
         "includeAll": true,
         "label": "Endpoint",
@@ -172,7 +186,7 @@
             "value": "$__all"
           }
         ],
-        "query": "label_values(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, http_route)",
+        "query": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", http_method=~\"$http_method\"}, http_route)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -233,7 +247,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "filters": [],
         "hide": 0,
@@ -253,7 +267,11 @@
       "5s",
       "10s",
       "30s",
-      "1m"
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h"
     ]
   },
   "timezone": "browser",
@@ -264,7 +282,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total request volume per second over time",
       "fieldConfig": {
@@ -345,7 +363,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__rate_interval]))",
@@ -360,7 +378,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Percentage of requests returning HTTP 5xx errors",
       "fieldConfig": {
@@ -451,7 +469,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "((sum(rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\", error=\"true\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__rate_interval])) > 0 or vector(1))) * 100",
@@ -466,7 +484,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Latency percentiles (P50, P95, P99) with exemplars enabled for direct Tempo trace navigation",
       "fieldConfig": {
@@ -594,7 +612,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -606,7 +624,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -618,7 +636,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -646,7 +664,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Primary navigation: Complete breakdown of Django routes with Method, RPS, error rates, latency percentiles, and 1-click drilldown into Endpoint Details.",
       "fieldConfig": {
@@ -902,7 +920,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum by (http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range]))",
@@ -915,7 +933,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "(((sum by (http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\", error=\"true\"}[$__range]))) or (0 * sum by (http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range])))) / (sum by (http_route, http_method) (rate(apm_calls_total{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range])) > 0)) * 100",
@@ -928,7 +946,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by (le, http_route, http_method) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range])))",
@@ -941,7 +959,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by (le, http_route, http_method) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range])))",
@@ -954,7 +972,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum by (le, http_route, http_method) (rate(apm_duration_milliseconds_bucket{span_name=\"django.request\", project_name=~\"$project\", cluster_name=~\"$cluster\", http_method=~\"$http_method\", http_route=~\"$endpoint\"}[$__range])))",

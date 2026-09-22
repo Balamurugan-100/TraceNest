@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Tracenest APM — Deep-dive performance for a specific Redis command (GET, SET, etc.). Renders operations volume, latency percentiles, errors, and full distributed flamegraph trace waterfall in Tempo.",
+  "description": "Tracenest APM \u2014 Deep-dive performance for a specific Redis command (GET, SET, etc.). Renders operations volume, latency percentiles, errors, and full distributed flamegraph trace waterfall in Tempo.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -13,7 +13,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "← Back to Redis Overview",
+      "title": "\u2190 Back to Redis Overview",
       "type": "link",
       "url": "/d/tracenest-redis-overview"
     },
@@ -23,7 +23,7 @@
       "includeVars": true,
       "keepTime": true,
       "targetBlank": false,
-      "title": "← Project Catalog",
+      "title": "\u2190 Project Catalog",
       "type": "link",
       "url": "/d/tracenest-project-catalog"
     },
@@ -38,7 +38,7 @@
       "url": "/d/tracenest-django-overview"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
@@ -50,6 +50,42 @@
   ],
   "templating": {
     "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "Tempo",
+          "value": "tempo"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "Tracing Datasource",
+        "multi": false,
+        "name": "DS_TEMPO",
+        "options": [],
+        "query": "tempo",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
       {
         "allValue": null,
         "current": {
@@ -63,7 +99,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(apm_calls_total, cluster_name)",
         "hide": 0,
@@ -96,9 +132,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(apm_calls_total{db_system=\"redis\"}, project_name)",
+        "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\"}, project_name)",
         "hide": 0,
         "includeAll": true,
         "label": "Project",
@@ -111,7 +147,7 @@
             "value": "$__all"
           }
         ],
-        "query": "label_values(apm_calls_total{db_system=\"redis\"}, project_name)",
+        "query": "label_values(apm_calls_total{cluster_name=~\"$cluster\"}, project_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -125,16 +161,16 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(apm_calls_total{db_system=\"redis\", project_name=~\"$project\"}, span_name)",
+        "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", db_system=\"redis\"}, span_name)",
         "hide": 0,
         "includeAll": false,
         "label": "Command",
         "multi": false,
         "name": "command",
         "options": [],
-        "query": "label_values(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\"}, span_name)",
+        "query": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", db_system=\"redis\"}, span_name)",
         "refresh": 2,
         "sort": 1,
         "type": "query"
@@ -142,7 +178,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "filters": [],
         "hide": 0,
@@ -162,11 +198,15 @@
       "5s",
       "10s",
       "30s",
-      "1m"
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h"
     ]
   },
   "timezone": "browser",
-  "title": "Redis — Command Details",
+  "title": "Redis \u2014 Command Details",
   "uid": "tracenest-redis-command",
   "version": 3,
   "panels": [
@@ -185,7 +225,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -232,7 +272,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(increase(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__range]))",
@@ -247,7 +287,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -294,7 +334,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(increase(apm_duration_milliseconds_sum{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__range]))",
@@ -309,7 +349,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -364,7 +404,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -379,7 +419,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -430,7 +470,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(increase(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\", error=\"true\"}[$__range])) or vector(0)",
@@ -445,7 +485,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -500,7 +540,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "((sum(rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\", error=\"true\"}[$__rate_interval])) or vector(0)) / (sum(rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) > 0 or vector(1))) * 100",
@@ -527,7 +567,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Total operations and error rate over time for the selected Redis command",
       "fieldConfig": {
@@ -639,7 +679,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval]))",
@@ -650,7 +690,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(rate(apm_calls_total{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\", error=\"true\"}[$__rate_interval])) or vector(0)",
@@ -665,7 +705,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Multi-percentile latency distribution (p50, p75, p90, p95, p99) for the selected Redis command",
       "fieldConfig": {
@@ -745,7 +785,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -756,7 +796,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.75, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -767,7 +807,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -778,7 +818,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -789,7 +829,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum(rate(apm_duration_milliseconds_bucket{db_system=\"redis\", project_name=~\"$project\", cluster_name=~\"$cluster\", span_name=~\"$command\"}[$__rate_interval])) by (le))",
@@ -816,7 +856,7 @@
     {
       "datasource": {
         "type": "tempo",
-        "uid": "tempo"
+        "uid": "${DS_TEMPO}"
       },
       "description": "Trace waterfall and flamegraph viewer for the selected Redis command. Click any Trace ID to open the complete flamegraph waterfall in Tempo.",
       "fieldConfig": {
@@ -861,8 +901,8 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "🔥 Open Flamegraph Waterfall in Tempo",
-                    "url": "/explore?left=%5B%22${__from}%22,%22${__to}%22,%22tempo%22,%7B%22query%22:%22${__value.raw}%22%7D%5D"
+                    "title": "\ud83d\udd25 Open Flamegraph Waterfall in Tempo",
+                    "url": "/explore?left=%5B%22${__from}%22,%22${__to}%22,%22${DS_TEMPO}%22,%7B%22query%22:%22${__value.raw}%22%7D%5D"
                   }
                 ]
               }
@@ -938,10 +978,10 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "limit": 30,
-          "query": "{ span.db.system = \"redis\" && (span.db.operation =~ \"(?i)$command\" || span.db.statement =~ \"(?i).*$command.*\") }",
+          "query": "{ resource.service.name =~ \"$project\" && span.db.system = \"redis\" && (span.db.operation =~ \"(?i)$command\" || span.db.statement =~ \"(?i).*$command.*\") }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"
