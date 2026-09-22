@@ -82,6 +82,9 @@ urlpatterns = [
 @pytest.fixture(autouse=True)
 def clean_sdk_and_django():
     tracenest._reset_for_testing()
+    from django.urls import clear_url_caches
+    settings.ROOT_URLCONF = "tests.test_django"
+    clear_url_caches()
     integration = DjangoIntegration()
     integration.instrument()
     yield

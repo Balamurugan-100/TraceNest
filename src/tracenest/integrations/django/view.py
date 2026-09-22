@@ -1,5 +1,8 @@
 """View span — wraps BaseHandler._get_response, View.dispatch, and resolves view name/route."""
+
+import functools
 import inspect
+import re
 from typing import Any, Callable, Optional
 
 from opentelemetry.trace import SpanKind, get_current_span
@@ -35,6 +38,13 @@ def _bind_response_parent(response: Any) -> None:
             curr = get_current_span()
             if curr and curr.is_recording():
                 response._tp_parent_span = curr
+
+
+@functools.lru_cache(maxsize=512)
+def _to_snake_case(name: str) -> str:
+    """Convert CamelCase view class name to snake_case (memoized for high throughput)."""
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def traced_get_response(wrapped: Callable, instance: Any, args: Any, kwargs: Any) -> Any:
@@ -114,9 +124,7 @@ def traced_view_dispatch(wrapped: Callable, instance: Any, args: Any, kwargs: An
         handler = getattr(instance, handler_method, None)
         if handler and callable(handler) and not getattr(handler, "_tp_traced", False):
             # Datadog formats class handler as <module>.<view_snake_case>.<method>
-            import re
-            s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', view_cls)
-            snake_cls = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+            snake_cls = _to_snake_case(view_cls)
             handler_span_name = f"🐍 {view_module}.{snake_cls}.{handler_method}" if view_module else f"🐍 {snake_cls}.{handler_method}"
             handler_attrs = {
                 "span.type": "web",

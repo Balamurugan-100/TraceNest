@@ -5,6 +5,7 @@ import re
 from typing import Any, Callable, Dict, Optional, Tuple
 
 from opentelemetry.trace import SpanKind, StatusCode, get_tracer
+from opentelemetry.context import attach, detach, set_value, get_value
 
 from tracenest.config import SDKConfig
 from tracenest.sanitize import sanitize_sql
@@ -14,6 +15,7 @@ import tracenest
 logger = logging.getLogger("tracenest.integrations.postgres")
 
 _config: Optional[SDKConfig] = None
+_SUPPRESS_KEY = "suppress_instrumentation"
 
 
 def set_config(config: Optional[SDKConfig]) -> None:
@@ -25,6 +27,7 @@ def set_config(config: Optional[SDKConfig]) -> None:
 def _get_config() -> Optional[SDKConfig]:
     """Return the config received through the integration seam, or global fallback."""
     return _config if _config is not None else tracenest.get_config()
+
 
 _KNOWN_SQL_OPS = (
     "SELECT",
@@ -74,13 +77,18 @@ def extract_query_summary(sql: Optional[str]) -> str:
     return op
 
 
-def _extract_django_db_meta(instance: Any) -> Tuple[str, str, str, str, int, Optional[str], str, str]:
-    """Extract connection parameters and role from Django's db connection on CursorWrapper.
+def _extract_django_db_meta(instance_or_conn: Any) -> Tuple[str, str, str, str, int, Optional[str], str, str]:
+    """Extract connection parameters and role from Django's db connection or CursorWrapper.
     
     Returns:
         (db_alias, db_vendor, db_name, db_host, db_port, db_user, db_role, peer_service)
     """
-    db_conn = getattr(instance, "db", None)
+    # Check if this is a CursorWrapper (has .db) or a Connection object directly
+    if hasattr(instance_or_conn, "db") and getattr(instance_or_conn, "db", None) is not None:
+        db_conn = getattr(instance_or_conn, "db")
+    else:
+        db_conn = instance_or_conn
+
     db_alias = "default"
     db_vendor = "postgresql"
     db_name = "unknown"
@@ -89,8 +97,8 @@ def _extract_django_db_meta(instance: Any) -> Tuple[str, str, str, str, int, Opt
     db_user = None
 
     if db_conn is not None:
-        db_alias = getattr(db_conn, "alias", "default")
-        db_vendor = getattr(db_conn, "vendor", "postgresql")
+        db_alias = getattr(db_conn, "alias", "default") or "default"
+        db_vendor = getattr(db_conn, "vendor", "postgresql") or "postgresql"
         settings_dict = getattr(db_conn, "settings_dict", {})
         if isinstance(settings_dict, dict):
             db_name = settings_dict.get("NAME") or "unknown"
@@ -113,8 +121,6 @@ def _extract_django_db_meta(instance: Any) -> Tuple[str, str, str, str, int, Opt
     return db_alias, db_vendor, db_name, db_host, db_port, db_user, db_role, peer_service
 
 
-
-
 def is_pgbouncer_connection(db_host: Any, db_port: Any) -> bool:
     """Determine if database connection is routed through PgBouncer."""
     host_str = str(db_host).lower() if db_host else ""
@@ -126,19 +132,95 @@ def is_pgbouncer_connection(db_host: Any, db_port: Any) -> bool:
 
 
 from contextlib import contextmanager
-try:
-    from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
-except ImportError:
-    from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY
-from opentelemetry.context import attach, detach, set_value
 
 @contextmanager
 def suppress_db_instrumentation():
-    token = attach(set_value(_SUPPRESS_INSTRUMENTATION_KEY, True))
+    """Context manager to suppress downstream duplicate driver instrumentation."""
+    token = attach(set_value(_SUPPRESS_KEY, True))
     try:
         yield
     finally:
         detach(token)
+
+
+def _build_db_span_context(
+    sql: Optional[str],
+    instance_or_conn: Any,
+) -> Tuple[str, Dict[str, Any]]:
+    """Construct span name and attributes for a database query."""
+    sanitized_sql = sanitize_sql(sql)
+    op = extract_operation(sanitized_sql)
+    db_alias, db_vendor, db_name, db_host, db_port, db_user, db_role, peer_service = _extract_django_db_meta(instance_or_conn)
+    summary = extract_query_summary(sanitized_sql)
+    is_pgbouncer = is_pgbouncer_connection(db_host, db_port)
+
+    span_attrs: Dict[str, Any] = {
+        "db.system": db_vendor if db_vendor else "postgresql",
+        "db.system.name": db_vendor if db_vendor else "postgresql",
+        "peer.service": "pgbouncer" if is_pgbouncer else peer_service,
+        "db.name": str(db_name),
+        "db.namespace": str(db_name),
+        "db.instance": str(db_alias),
+        "db.connection_alias": str(db_alias),
+        "net.peer.name": str(db_host),
+        "net.peer.port": db_port,
+        "server.address": str(db_host),
+        "server.port": db_port,
+        "db.statement": sanitized_sql,
+        "db.query.text": sanitized_sql,
+        "db.query.summary": summary,
+        "db.operation": op,
+        "db.operation.name": op,
+        "db.role": db_role,
+        "resource.name": sanitized_sql,
+    }
+    if is_pgbouncer:
+        span_attrs["db.connection.pool"] = "pgbouncer"
+    if db_user:
+        span_attrs["db.user"] = str(db_user)
+
+    db_icon = "🔵" if is_pgbouncer else "🐘"
+    span_name = f"{db_icon} {sanitized_sql}" if sanitized_sql else f"{db_icon} postgres.query"
+
+    return span_name, span_attrs
+
+
+def tracenest_django_db_execute_wrapper(
+    execute: Callable,
+    sql: str,
+    params: Any,
+    many: bool,
+    context: Dict[str, Any],
+) -> Any:
+    """Official Django database execute wrapper (compatible with connection.execute_wrappers)."""
+    conn = context.get("connection") if isinstance(context, dict) else None
+    cursor = context.get("cursor") if isinstance(context, dict) else None
+    guard_obj = conn if conn is not None else cursor
+
+    with reentrant_guard(guard_obj, "_tp_in_exec") as should_trace:
+        if not should_trace:
+            return execute(sql, params, many, context)
+
+        span_name, span_attrs = _build_db_span_context(sql, conn)
+        with traced_span(
+            span_name,
+            kind=SpanKind.CLIENT,
+            attributes=span_attrs,
+            tracer_name="tracenest.postgres",
+        ) as span:
+            try:
+                result = execute(sql, params, many, context)
+                rowcount = getattr(cursor, "rowcount", None)
+                if rowcount is not None and rowcount >= 0:
+                    span.set_attribute("db.row_count", rowcount)
+                    span.set_attribute("db.response.returned_rows", rowcount)
+                return result
+            except Exception as exc:
+                span.record_exception(exc)
+                span.set_attribute("error", True)
+                span.set_attribute("error.type", exc.__class__.__name__)
+                span.set_status(StatusCode.ERROR, description=str(exc))
+                raise
 
 
 def traced_django_cursor_exec(
@@ -154,44 +236,9 @@ def traced_django_cursor_exec(
         if not should_trace:
             return wrapped(*args, **kwargs)
 
-        tracer = get_tracer("tracenest.postgres")
         sql = args[0] if args else kwargs.get("sql", "")
-        sanitized_sql = sanitize_sql(sql)
-        op = extract_operation(sanitized_sql)
+        span_name, span_attrs = _build_db_span_context(sql, instance)
 
-        db_alias, db_vendor, db_name, db_host, db_port, db_user, db_role, peer_service = _extract_django_db_meta(instance)
-
-        summary = extract_query_summary(sanitized_sql)
-        is_pgbouncer = is_pgbouncer_connection(db_host, db_port)
-
-        span_attrs: Dict[str, Any] = {
-            "db.system": db_vendor if db_vendor else "postgresql",
-            "db.system.name": db_vendor if db_vendor else "postgresql",
-            "peer.service": "pgbouncer" if is_pgbouncer else peer_service,
-            "db.name": str(db_name),
-            "db.namespace": str(db_name),
-            "db.instance": str(db_alias),
-            "db.connection_alias": str(db_alias),
-            "net.peer.name": str(db_host),
-            "net.peer.port": db_port,
-            "server.address": str(db_host),
-            "server.port": db_port,
-            "db.statement": sanitized_sql,
-            "db.query.text": sanitized_sql,
-            "db.query.summary": summary,
-            "db.operation": op,
-            "db.operation.name": op,
-            "db.role": db_role,
-            "resource.name": sanitized_sql,
-        }
-        if is_pgbouncer:
-            span_attrs["db.connection.pool"] = "pgbouncer"
-        if db_user:
-            span_attrs["db.user"] = str(db_user)
-
-        db_icon = "🔵" if is_pgbouncer else "🐘"
-
-        span_name = f"{db_icon} {sanitized_sql}" if sanitized_sql else f"{db_icon} postgres.query"
         with traced_span(
             span_name,
             kind=SpanKind.CLIENT,
@@ -213,9 +260,3 @@ def traced_django_cursor_exec(
                 span.set_attribute("error.type", exc.__class__.__name__)
                 span.set_status(StatusCode.ERROR, description=str(exc))
                 raise
-
-
-
-
-
-

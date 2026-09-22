@@ -499,20 +499,53 @@ def test_pgbouncer_single_span_attributes():
 
 
 def test_suppress_driver_instrumentation_prevents_duplicate_spans():
-    """Verify suppress_db_instrumentation sets OTel _SUPPRESS_INSTRUMENTATION_KEY to prevent duplicate driver spans."""
+    """Verify suppress_db_instrumentation sets OTel suppression key to prevent duplicate driver spans."""
     tracenest._reset_for_testing()
     exporter = InMemorySpanExporter()
     tracenest.init(project_name="single-span-policy-svc", exporter=exporter, export_batch=False)
 
-    from tracenest.integrations.postgres.cursor import suppress_db_instrumentation
-    from opentelemetry.context import get_value, _SUPPRESS_INSTRUMENTATION_KEY
+    from tracenest.integrations.postgres.cursor import suppress_db_instrumentation, _SUPPRESS_KEY
+    from opentelemetry.context import get_value
 
     # Outside context: not suppressed
-    assert get_value(_SUPPRESS_INSTRUMENTATION_KEY) is None or get_value(_SUPPRESS_INSTRUMENTATION_KEY) is False
+    assert get_value(_SUPPRESS_KEY) is None or get_value(_SUPPRESS_KEY) is False
 
-    # Inside context: suppressed (Psycopg2Instrumentor checks this key and skips span creation)
+    # Inside context: suppressed
     with suppress_db_instrumentation():
-        assert get_value(_SUPPRESS_INSTRUMENTATION_KEY) is True
+        assert get_value(_SUPPRESS_KEY) is True
+
+
+def test_django_native_execute_wrapper_creates_span():
+    """Verify executing via Django native execute_wrapper creates a span with correct attributes."""
+    tracenest._reset_for_testing()
+    exporter = InMemorySpanExporter()
+    tracenest.init(project_name="native-wrapper-svc", exporter=exporter, export_batch=False)
+
+    from tracenest.integrations.postgres.cursor import tracenest_django_db_execute_wrapper
+
+    mock_db = MockDatabaseConnection(
+        alias="slave1",
+        vendor="postgresql",
+        host="replica-host",
+        port=5432,
+        db_name="replica_db",
+    )
+    mock_cursor = MockRawCursor(rowcount=3)
+
+    def mock_execute(sql, params, many, context):
+        return mock_cursor.execute(sql, params)
+
+    context = {"connection": mock_db, "cursor": mock_cursor}
+    tracenest_django_db_execute_wrapper(mock_execute, "SELECT id FROM items WHERE active = 1", None, False, context)
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert span.name == "🐘 SELECT id FROM items WHERE active = ?"
+    assert span.attributes["db.role"] == "replica"
+    assert span.attributes["db.instance"] == "slave1"
+    assert span.attributes["db.row_count"] == 3
+
 
 
 

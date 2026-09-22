@@ -1,10 +1,10 @@
-"""PostgresIntegration — wraps Django DB cursors and psycopg2/psycopg driver cursors."""
+"""PostgresIntegration — wraps Django DB connections/cursors and psycopg2/psycopg driver cursors."""
 
 import importlib
 import logging
 
 from tracenest.integrations.base import BaseIntegration
-from .cursor import traced_django_cursor_exec
+from .cursor import traced_django_cursor_exec, tracenest_django_db_execute_wrapper
 
 logger = logging.getLogger("tracenest.integrations.postgres")
 
@@ -42,7 +42,26 @@ class PostgresIntegration(BaseIntegration):
         from . import cursor as _cursor
         _cursor.set_config(self._config)
 
-        # 1. Patch Django database wrappers (django.db.backends.utils.CursorWrapper)
+        # 1. Attach native execute_wrappers to active Django database connections
+        try:
+            from django.db import connections
+            from django.db.backends.signals import connection_created
+
+            for conn in connections.all():
+                if hasattr(conn, "execute_wrappers") and tracenest_django_db_execute_wrapper not in conn.execute_wrappers:
+                    conn.execute_wrappers.append(tracenest_django_db_execute_wrapper)
+
+            # Also listen for new connections
+            def _on_connection_created(sender, connection, **kwargs):
+                if hasattr(connection, "execute_wrappers") and tracenest_django_db_execute_wrapper not in connection.execute_wrappers:
+                    connection.execute_wrappers.append(tracenest_django_db_execute_wrapper)
+
+            self._connection_created_handler = _on_connection_created
+            connection_created.connect(_on_connection_created, weak=False)
+        except Exception as exc:
+            logger.debug("Django connections execute_wrapper patch skipped: %s", exc)
+
+        # 2. Patch Django database wrappers (django.db.backends.utils.CursorWrapper) as fallback
         try:
             import django.db.backends.utils
 
@@ -71,7 +90,7 @@ class PostgresIntegration(BaseIntegration):
         except Exception as exc:
             logger.debug("Django db backends utils patch skipped: %s", exc)
 
-        # 2. Instrument direct psycopg2 driver via official OTel Psycopg2Instrumentor
+        # 3. Instrument direct psycopg2 driver via official OTel Psycopg2Instrumentor
         try:
             from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
@@ -82,6 +101,20 @@ class PostgresIntegration(BaseIntegration):
             logger.debug("Psycopg2Instrumentor patch skipped: %s", exc)
 
     def uninstrument(self) -> bool:
+        # Remove connection signal handler and execute_wrappers
+        try:
+            from django.db import connections
+            from django.db.backends.signals import connection_created
+
+            if hasattr(self, "_connection_created_handler"):
+                connection_created.disconnect(self._connection_created_handler)
+
+            for conn in connections.all():
+                if hasattr(conn, "execute_wrappers") and tracenest_django_db_execute_wrapper in conn.execute_wrappers:
+                    conn.execute_wrappers.remove(tracenest_django_db_execute_wrapper)
+        except Exception:
+            pass
+
         try:
             from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
@@ -92,4 +125,3 @@ class PostgresIntegration(BaseIntegration):
             pass
 
         return super().uninstrument()
-
