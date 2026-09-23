@@ -547,6 +547,62 @@ def test_django_native_execute_wrapper_creates_span():
     assert span.attributes["db.row_count"] == 3
 
 
+def test_no_duplicate_spans_when_cursorwrapper_and_execute_wrappers_coexist():
+    """Verify that when CursorWrapper.execute and connection.execute_wrappers coexist, only 1 span is created."""
+    tracenest._reset_for_testing()
+    exporter = InMemorySpanExporter()
+    tracenest.init(project_name="no-dup-svc", exporter=exporter, export_batch=False)
+
+    from tracenest.integrations.postgres.cursor import (
+        traced_django_cursor_exec,
+        tracenest_django_db_execute_wrapper,
+    )
+
+    mock_db = MockDatabaseConnection(
+        alias="default",
+        vendor="postgresql",
+        host="master-host",
+        port=5432,
+        db_name="master_db",
+    )
+    mock_cursor = MockRawCursor(rowcount=5)
+
+    # Simulate Django's CursorWrapper which internally calls _execute_with_wrappers
+    class RealDjangoCursorWrapper:
+        def __init__(self, cursor, db):
+            self.cursor = cursor
+            self.db = db
+
+        def execute(self, sql, params=None):
+            # Django's _execute_with_wrappers invokes each wrapper in db.execute_wrappers
+            def _raw_exec(s, p, many, ctx):
+                return self.cursor.execute(s, p)
+
+            context = {"connection": self.db, "cursor": self.cursor}
+            return tracenest_django_db_execute_wrapper(_raw_exec, sql, params, False, context)
+
+    wrapper_instance = RealDjangoCursorWrapper(mock_cursor, mock_db)
+
+    # traced_django_cursor_exec wraps CursorWrapper.execute
+    def wrapped_execute(sql, params=None):
+        return wrapper_instance.execute(sql, params)
+
+    traced_django_cursor_exec(
+        wrapped_execute,
+        wrapper_instance,
+        ("SELECT * FROM users WHERE active = 1", None),
+        {},
+        "execute",
+    )
+
+    spans = exporter.get_finished_spans()
+    # There MUST be exactly 1 span, not 2 nested duplicate spans
+    assert len(spans) == 1
+    assert spans[0].name == "🐘 SELECT * FROM users WHERE active = ?"
+    assert spans[0].attributes["db.instance"] == "default"
+
+
+
 
 
 

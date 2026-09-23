@@ -193,6 +193,9 @@ def tracenest_django_db_execute_wrapper(
     context: Dict[str, Any],
 ) -> Any:
     """Official Django database execute wrapper (compatible with connection.execute_wrappers)."""
+    if get_value(_SUPPRESS_KEY):
+        return execute(sql, params, many, context)
+
     conn = context.get("connection") if isinstance(context, dict) else None
     cursor = context.get("cursor") if isinstance(context, dict) else None
     guard_obj = conn if conn is not None else cursor
@@ -209,7 +212,8 @@ def tracenest_django_db_execute_wrapper(
             tracer_name="tracenest.postgres",
         ) as span:
             try:
-                result = execute(sql, params, many, context)
+                with suppress_db_instrumentation():
+                    result = execute(sql, params, many, context)
                 rowcount = getattr(cursor, "rowcount", None)
                 if rowcount is not None and rowcount >= 0:
                     span.set_attribute("db.row_count", rowcount)
@@ -231,6 +235,9 @@ def traced_django_cursor_exec(
     op_type: str = "execute",
 ) -> Any:
     """Wrapper for Django CursorWrapper.execute and executemany."""
+    if get_value(_SUPPRESS_KEY):
+        return wrapped(*args, **kwargs)
+
     # Re-entrancy guard to avoid nested spans for the same logical query
     with reentrant_guard(instance, "_tp_in_exec") as should_trace:
         if not should_trace:
