@@ -84,7 +84,8 @@ Every instrumented operation follows a structured execution lifecycle:
 
 ```python
 # Conceptual wrapper lifecycle
-with traced_span("postgres.query", kind=SpanKind.CLIENT) as span:
+span_name = f"🐘 {sanitize_sql(query)}"
+with traced_span(span_name, kind=SpanKind.CLIENT) as span:
     span.set_attribute("db.system", "postgresql")
     span.set_attribute("db.statement", sanitize_sql(query))
     

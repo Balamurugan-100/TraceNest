@@ -5,15 +5,15 @@ TraceNest automatically detects and instruments key frameworks, databases, and c
 When `tracenest.init()` runs, it auto-patches all installed components with zero configuration.
 
 ```text
-                               DJANGO REQUEST WATERFALL
+                                DJANGO REQUEST WATERFALL
  ┌──────────────────────────────────────────────────────────────────────────┐
  │ django.request [SERVER]                                                  │
- │  ├── ⚙️ django.middleware.SecurityMiddleware                            │
- │  ├── ⚙️ django.middleware.AuthenticationMiddleware                      │
+ │  ├── ⚙️ django.middleware.security.SecurityMiddleware.__call__           │
+ │  ├── ⚙️ django.contrib.auth.middleware.AuthenticationMiddleware.__call__  │
  │  └── 🐍 django.view.ProductDetailView                                   │
- │       ├── 🔵 postgres.query "SELECT ... FROM products WHERE id = %s"     │
- │       ├── 🔴 redis.command "GET cache:product:123"                       │
- │       ├── 🌐 HTTP GET https://api.inventory.internal/stock               │
+ │       ├── 🔵 SELECT id, name, price FROM products WHERE id = ?          │
+ │       ├── 🔴 django_redis.cache.get                                     │
+ │       ├── 🌐 HTTP GET api.inventory.internal                            │
  │       └── 🎨 django.template: products/detail.html                       │
  └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -27,11 +27,12 @@ The Django integration provides complete lifecycle observability for inbound HTT
 | Span Name / Pattern | Kind | Description | Key Attributes |
 | :--- | :--- | :--- | :--- |
 | **`django.request`** | `SERVER` | Root span representing the entire HTTP request | `http.method`, `http.status_code`, `http.route`, `client.address` |
-| **`⚙️ django.middleware.<Name>`** | `INTERNAL` | Execution timing for class-based middleware | `django.middleware.name`, `django.middleware.method` |
-| **`🐍 django.view.<Name>`** | `INTERNAL` | View execution (FBVs, CBVs, DRF viewsets) | `django.view.name`, `django.view.action` |
+| **`⚙️ <module>.<Class>.<method>`** | `INTERNAL` | Timing for middleware hooks (`__call__`, `process_request`, etc.) | `django.middleware`, `django.middleware.name`, `django.middleware.method` |
+| **`🐍 django.view.<Name>`** | `INTERNAL` | View execution (FBVs, CBVs, DRF viewsets, `dispatch`) | `django.view`, `django.view.name`, `django.view.class`, `django.view.action` |
 | **`🎨 django.template: <name>`** | `INTERNAL` | Template rendering and nested `{% include %}` | `django.template.name` |
-| **`django.cache.<op>`** | `INTERNAL` | Django cache backend calls (`get`, `set`, `delete`) | `django.cache.backend`, `django.cache.hit` |
-| **`🔐 django.auth.<event>`** | `INTERNAL` | User login, logout, and auth failures | `django.auth.user_id`, `django.auth.status` |
+| **`🔴 django_redis.cache.<op>`** | `INTERNAL` | Django cache backend calls (`get`, `set`, `delete`) | `django.cache.operation`, `django.cache.backend`, `django.cache.key`, `django.cache.hit` |
+| **`🔐 django.auth.login`** | `INTERNAL` | User login event | `django.auth.action="login"`, `usr.id`, `enduser.id` |
+| **`🔐 django.auth.authenticate`** | `INTERNAL` | User authentication attempts | `django.auth.action="authenticate"`, `auth.success` (bool), `usr.id`, `enduser.id` |
 
 ### Key Features
 - **Route Normalization**: Automatically converts high-cardinality paths like `/api/users/8572/` into normalized templates `/api/users/{id}/` to keep Prometheus metric series clean.
@@ -46,24 +47,25 @@ Wraps database cursor execution to track queries, timing, and connection topolog
 
 | Span Name / Pattern | Kind | Description | Key Attributes |
 | :--- | :--- | :--- | :--- |
-| **`🐘 postgres.query`** | `CLIENT` | Direct PostgreSQL database query | `db.system="postgresql"`, `db.statement`, `db.role="primary"` |
-| **`🔵 postgres.query`** | `CLIENT` | Query executed through **PgBouncer** connection pool | `db.system="postgresql"`, `db.connection.pool="pgbouncer"` |
-| **`🐘 postgres.query (replica)`** | `CLIENT` | Query routed to a read-replica (`slave1`, `slave2`) | `db.system="postgresql"`, `db.role="replica"`, `db.instance` |
+| **`🐘 <sanitized_sql>`** | `CLIENT` | Direct PostgreSQL database query (e.g. `🐘 SELECT * FROM users WHERE id = ?`) | `db.system="postgresql"`, `db.statement`, `db.operation`, `db.role="primary"`, `db.instance` |
+| **`🔵 <sanitized_sql>`** | `CLIENT` | Query executed through **PgBouncer** connection pool | `db.system="postgresql"`, `db.statement`, `db.connection.pool="pgbouncer"`, `peer.service="pgbouncer"` |
+| **`🐘 postgres.query`** | `CLIENT` | Fallback span name when SQL statement is empty or unavailable | `db.system="postgresql"`, `db.role`, `db.instance` |
 
 ### Key Features
-- **SQL Sanitization**: Strips literals, IDs, strings, and sensitive values (e.g. `SELECT * FROM users WHERE email = 'bob@example.com'` $\rightarrow$ `SELECT * FROM users WHERE email = %s`).
-- **Topology Awareness**: Automatically distinguishes between Primary DB, Read-Replicas, and PgBouncer connection pools using host/port metadata.
+- **SQL Sanitization**: Strips literals, IDs, strings, and sensitive values (e.g. `SELECT * FROM users WHERE email = 'bob@example.com'` $\rightarrow$ `SELECT * FROM users WHERE email = ?`).
+- **Topology Awareness**: Automatically distinguishes between Primary DB (`db.role="primary"`), Read-Replicas (`db.role="replica"`), and PgBouncer connection pools using host/port metadata.
 
 ---
 
-## 3. Redis Integration (`redis-py`)
+## 3. Redis Integration (`redis-py` & `django_redis`)
 
-Instruments Redis client commands and batch pipelines.
+Instruments Redis client commands and Django cache operations.
 
 | Span Name / Pattern | Kind | Description | Key Attributes |
 | :--- | :--- | :--- | :--- |
-| **`🔴 redis.command`** | `CLIENT` | Single Redis command (`GET`, `SET`, `INCR`, `HGETALL`) | `db.system="redis"`, `db.operation`, `net.peer.name` |
-| **`🔴 redis.pipeline`** | `CLIENT` | Batch pipeline execution containing multiple commands | `db.system="redis"`, `redis.pipeline.length` |
+| **`<COMMAND>`** (e.g. `GET`, `SET`, `HGETALL`) | `CLIENT` | Direct low-level Redis client commands via official `RedisInstrumentor` | `db.system="redis"`, `db.operation`, `db.statement`, `net.peer.name` |
+| **`PIPELINE`** | `CLIENT` | Redis batch pipeline execution | `db.system="redis"`, `db.operation="PIPELINE"` |
+| **`🔴 django_redis.cache.<op>`** | `INTERNAL` | Django cache operations (`get`, `set`, `delete_many`, etc.) | `django.cache.operation`, `django.cache.backend`, `django.cache.key`, `django.cache.hit` |
 
 ### Key Features
 - **Sensitive Command Redaction**: Arguments for commands like `AUTH`, `CONFIG`, and `PASSWORD` are automatically scrubbed.

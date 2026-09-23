@@ -165,7 +165,7 @@ Latency Graph (Prometheus)
   │                                                          │
   └──────────────────────────────────────────────────────────┼───────────────► Tempo Waterfall
                                                                                ├── django.request
-                                                                               └── postgres.query (Slow)
+                                                                               └── 🐘 SELECT * FROM items (Slow)
 ```
 
 ---
