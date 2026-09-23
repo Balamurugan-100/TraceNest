@@ -38,6 +38,9 @@ services:
       - ./sample-app/pgbouncer/pg_hba.conf:/etc/pgbouncer/pg_hba.conf:ro
       - pgbouncer_log:/var/log/pgbouncer
     entrypoint: [ "/opt/pgbouncer/pgbouncer", "/etc/pgbouncer/pgbouncer.ini" ]
+    networks:
+      - default
+      - tp-observability-net
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,7 +59,7 @@ services:
       resources:
         limits:
           cpus: '0.02'
-          memory: 64M
+          memory: 128M
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -234,6 +237,7 @@ services:
     depends_on:
       - tempo
     networks:
+      - default
       - tp-observability-net
 
   tempo:
@@ -266,7 +270,7 @@ services:
       - tp-observability-net
 
   grafana:
-    image: grafana/grafana:10.4.1
+    image: grafana/grafana:12.4.10
     container_name: tp-grafana
     volumes:
       - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
