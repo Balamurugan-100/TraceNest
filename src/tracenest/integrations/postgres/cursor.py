@@ -196,28 +196,32 @@ def tracenest_django_db_execute_wrapper(
     if get_value(_SUPPRESS_KEY):
         return execute(sql, params, many, context)
 
-    conn = context.get("connection") if isinstance(context, dict) else None
-    cursor = context.get("cursor") if isinstance(context, dict) else None
-    guard_obj = conn if conn is not None else cursor
+    try:
+        conn = context.get("connection") if isinstance(context, dict) else None
+        cursor = context.get("cursor") if isinstance(context, dict) else None
+        guard_obj = conn if conn is not None else cursor
 
-    with reentrant_guard(guard_obj, "_tp_in_exec") as should_trace:
-        if not should_trace:
-            return execute(sql, params, many, context)
+        with reentrant_guard(guard_obj, "_tp_in_exec") as should_trace:
+            if not should_trace:
+                return execute(sql, params, many, context)
 
-        span_name, span_attrs = _build_db_span_context(sql, conn)
-        with traced_span(
-            span_name,
-            kind=SpanKind.CLIENT,
-            attributes=span_attrs,
-            tracer_name="tracenest.postgres",
-        ) as span:
-            with suppress_db_instrumentation():
-                result = execute(sql, params, many, context)
-            rowcount = getattr(cursor, "rowcount", None)
-            if rowcount is not None and rowcount >= 0:
-                span.set_attribute("db.row_count", rowcount)
-                span.set_attribute("db.response.returned_rows", rowcount)
-            return result
+            span_name, span_attrs = _build_db_span_context(sql, conn)
+            with traced_span(
+                span_name,
+                kind=SpanKind.CLIENT,
+                attributes=span_attrs,
+                tracer_name="tracenest.postgres",
+            ) as span:
+                with suppress_db_instrumentation():
+                    result = execute(sql, params, many, context)
+                rowcount = getattr(cursor, "rowcount", None)
+                if rowcount is not None and rowcount >= 0:
+                    span.set_attribute("db.row_count", rowcount)
+                    span.set_attribute("db.response.returned_rows", rowcount)
+                return result
+    except Exception as exc:
+        logger.debug("TraceNest DB execute wrapper error: %s", exc, exc_info=True)
+        return execute(sql, params, many, context)
 
 
 def traced_django_cursor_exec(
@@ -226,30 +230,36 @@ def traced_django_cursor_exec(
     args: Any,
     kwargs: Any,
     op_type: str = "execute",
+    *extra_args: Any,
+    **extra_kwargs: Any,
 ) -> Any:
     """Wrapper for Django CursorWrapper.execute and executemany."""
     if get_value(_SUPPRESS_KEY):
         return wrapped(*args, **kwargs)
 
-    # Re-entrancy guard to avoid nested spans for the same logical query
-    with reentrant_guard(instance, "_tp_in_exec") as should_trace:
-        if not should_trace:
-            return wrapped(*args, **kwargs)
+    try:
+        # Re-entrancy guard to avoid nested spans for the same logical query
+        with reentrant_guard(instance, "_tp_in_exec") as should_trace:
+            if not should_trace:
+                return wrapped(*args, **kwargs)
 
-        sql = args[0] if args else kwargs.get("sql", "")
-        span_name, span_attrs = _build_db_span_context(sql, instance)
+            sql = args[0] if args else kwargs.get("sql", "")
+            span_name, span_attrs = _build_db_span_context(sql, instance)
 
-        with traced_span(
-            span_name,
-            kind=SpanKind.CLIENT,
-            attributes=span_attrs,
-            tracer_name="tracenest.postgres",
-        ) as span:
-            with suppress_db_instrumentation():
-                result = wrapped(*args, **kwargs)
-            cursor = getattr(instance, "cursor", instance)
-            rowcount = getattr(cursor, "rowcount", None)
-            if rowcount is not None and rowcount >= 0:
-                span.set_attribute("db.row_count", rowcount)
-                span.set_attribute("db.response.returned_rows", rowcount)
-            return result
+            with traced_span(
+                span_name,
+                kind=SpanKind.CLIENT,
+                attributes=span_attrs,
+                tracer_name="tracenest.postgres",
+            ) as span:
+                with suppress_db_instrumentation():
+                    result = wrapped(*args, **kwargs)
+                cursor = getattr(instance, "cursor", instance)
+                rowcount = getattr(cursor, "rowcount", None)
+                if rowcount is not None and rowcount >= 0:
+                    span.set_attribute("db.row_count", rowcount)
+                    span.set_attribute("db.response.returned_rows", rowcount)
+                return result
+    except Exception as exc:
+        logger.debug("TraceNest cursor exec wrapper error: %s", exc, exc_info=True)
+        return wrapped(*args, **kwargs)

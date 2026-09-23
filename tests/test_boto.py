@@ -6,9 +6,12 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
+import pytest
 import tracenest
 from tracenest.integrations.boto import BotoIntegration
 from tracenest.integrations.manager import get_integration_manager
+
+pytest.importorskip("botocore")
 
 
 def setup_function():
