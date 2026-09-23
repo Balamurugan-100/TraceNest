@@ -187,18 +187,22 @@ Every dashboard provides a standardized top toolbar for filtering telemetry:
 
 | Variable | Description | Example Values |
 | :--- | :--- | :--- |
-| **`$service`** | Selects the target microservice | `tp-django-app`, `order-service` |
-| **`$environment`** | Filters by deployment tier | `production`, `staging`, `development` |
-| **`$http_route`** | Filters by normalized endpoint path | `/api/products/{id}/`, `/api/checkout/` |
+| **`$project`** | Selects the target service/application | `otel-sample`, `django-lite-app` |
+| **`$cluster`** | Selects the environment/cluster | `production`, `demo-cluster` |
+| **`$endpoint`** | Filters by normalized endpoint path | `/api/products/{id}/`, `/api/checkout/` |
+| **`$http_method`** | Filters by HTTP verb | `GET`, `POST`, `PUT`, `DELETE` |
+| **`$instance`** | Filters by database/cache host instance | `pgbouncer`, `slave1db`, `redis` |
+| **`$query`** | Filters by normalized SQL query pattern | `SELECT api_product...` |
+| **`$command`** | Filters by Redis command name | `GET`, `SET`, `HGETALL` |
 | **`$severity`** | Filters issues on the triage board | `Critical`, `Warning`, `Info` |
-| **`$Filters`** | Ad-hoc filter bar for adding custom label matchers | `status_code = 500`, `db_role = primary` |
+| **`$Filters`** | Ad-hoc filter bar for adding custom label matchers | `status_code = 500`, `error = true` |
 | **Time Range** | Time window for PromQL aggregation | `Last 15 minutes`, `Last 1 hour`, `Last 24 hours` |
 
 ---
 
 ## 5. Summary Cheat Sheet
 
-* **Start here for incidents**: [`tracenest-needs-attention`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docker/grafana/dashboards/tracenest_needs_attention.json)
-* **Start here for service health**: [`tracenest-service-catalog`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docker/grafana/dashboards/tracenest_service_catalog.json)
-* **Start here for route latency**: [`tracenest-django-endpoint-details`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docker/grafana/dashboards/tracenest_django_endpoint_details.json)
-* **Start here for database latency**: [`tracenest-postgres-overview`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docker/grafana/dashboards/tracenest_postgres_overview.json)
+* **Start here for incidents**: [`tracenest-needs-attention`](../docker/grafana/dashboards/tracenest_needs_attention.json)
+* **Start here for service health**: [`tracenest-service-catalog`](../docker/grafana/dashboards/tracenest_service_catalog.json)
+* **Start here for route latency**: [`tracenest-django-endpoint-details`](../docker/grafana/dashboards/tracenest_django_endpoint_details.json)
+* **Start here for database latency**: [`tracenest-postgres-overview`](../docker/grafana/dashboards/tracenest_postgres_overview.json)

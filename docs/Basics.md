@@ -210,7 +210,7 @@ Instead of instrumenting separate client-side code for metrics and traces, moder
 
 The collector automatically generates:
 - **`apm_calls_total`**: Request count by service, endpoint, status code, and error flag.
-- **`apm_calls_duration_seconds`**: Latency histograms broken down by route, database query, or Redis command.
+- **`apm_duration_milliseconds`**: Latency histograms (`apm_duration_milliseconds_bucket`) broken down by route, database query, or Redis command.
 
 ---
 
@@ -231,9 +231,9 @@ apm_calls_total{service_name="course-service", http_route="/api/courses/{id}/", 
 1. **Counter**: A cumulative metric that only increases (or resets to 0 on restart).
    - *Example*: `apm_calls_total` (total requests processed).
 2. **Gauge**: A metric that can arbitrarily go up or down.
-   - *Example*: `pgbouncer_active_clients` (currently active pool connections).
+   - *Example*: `postgresql_database_locks` (current active database locks/connections).
 3. **Histogram**: Samples observations (usually request durations or response sizes) and counts them in configurable bucket ranges (`le` label).
-   - *Example*: `apm_calls_duration_seconds_bucket{le="0.05", http_route="/api/products/"}` (requests taking $\le$ 50ms).
+   - *Example*: `apm_duration_milliseconds_bucket{le="50", http_route="/api/products/"}` (requests taking $\le$ 50ms).
 
 ### 3. Essential PromQL (Prometheus Query Language)
 PromQL allows real-time aggregation and calculation over time-series data:
@@ -259,7 +259,7 @@ PromQL allows real-time aggregation and calculation over time-series data:
   ```promql
   histogram_quantile(
     0.95,
-    sum(rate(apm_calls_duration_seconds_bucket[5m])) by (le, http_route)
+    sum(rate(apm_duration_milliseconds_bucket[5m])) by (le, http_route)
   )
   ```
 

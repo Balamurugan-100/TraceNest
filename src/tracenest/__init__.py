@@ -28,7 +28,7 @@ from tracenest.config import SDKConfig
 from tracenest.exporter import SafeSpanExporter
 from tracenest.route_context import RouteEnrichingSpanProcessor
 from tracenest.integrations import BaseIntegration, get_integration_manager
-from tracenest.sanitize import sanitize_sql, sanitize_url
+from tracenest.sanitize import sanitize_query_string, sanitize_sql, sanitize_url
 from tracenest.version import __version__
 
 logger = logging.getLogger("tracenest")
@@ -88,7 +88,7 @@ def init(
 
         config = SDKConfig.from_env_and_kwargs(
             project=project,
-        cluster_name=cluster_name,
+            cluster_name=cluster_name,
             project_name=project_name,
             environment=environment,
             version=version,
@@ -185,7 +185,12 @@ def init(
 
                 if span_processor is None:
                     if export_batch:
-                        span_processor = BatchSpanProcessor(safe_exporter)
+                        span_processor = BatchSpanProcessor(
+                            safe_exporter,
+                            max_queue_size=512,
+                            max_export_batch_size=128,
+                            schedule_delay_millis=2000,
+                        )
                     else:
                         span_processor = SimpleSpanProcessor(safe_exporter)
 

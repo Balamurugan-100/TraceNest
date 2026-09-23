@@ -23,7 +23,7 @@ This document tracks the status of all application-level, service-level, and req
 ### 1. Core Metrics and Visibility
 
 - [x] **Application & service-level latency, throughput, and error metrics**
-  - *Details*: OpenTelemetry metrics (`http.server.requests`, `http.server.errors`, `http.server.request.duration`, `apm_calls_total`, `apm_calls_duration_seconds_bucket`) exported via SDK OTLP HTTP exporter and OpenTelemetry Collector `spanmetrics` connector.
+  - *Details*: RED metrics (`apm_calls_total`, `apm_duration_milliseconds_bucket`) automatically derived from SDK spans via the OpenTelemetry Collector's `spanmetrics` connector and exported to Prometheus.
 - [x] **Endpoint-level request volume, throughput, latency, and error analysis**
   - *Details*: Low-cardinality URL route normalization (`_normalize_route`) in Django integration (`src/tracenest/integrations/django/request.py`), aggregated per endpoint path in Prometheus and displayed on `tracenest_django_overview` and `tracenest_django_endpoint_details`.
 - [x] **Visibility into key services**:
@@ -37,9 +37,9 @@ This document tracks the status of all application-level, service-level, and req
 - [x] **Span waterfall visualization for individual requests**
   - *Details*: Grafana Tempo datasource rendering complete nested execution trees (middleware, views, templates, SQL queries, Redis ops, HTTP calls).
 - [x] **Filtering by application, service, endpoint, environment, status, and time range**
-  - *Details*: Grafana dashboard template variables (`$project`, `$cluster`, `$server_location`, `$environment`, `$service`, `$endpoint`, `$query`, `$command`) + Grafana native time-range picker.
+  - *Details*: Grafana dashboard template variables (`$project`, `$cluster`, `$endpoint`, `$http_method`, `$instance`, `$query`, `$command`, `$severity`, `$Filters`) + Grafana native time-range picker.
 - [x] **Performance comparison across different time periods**
-  - *Details*: 7-day median rolling baseline queries (`quantile_over_time(0.5, apm_calls_total[7d:1h])`), current 5m rate/latency comparison, deviation percentage calculation, and anomaly detection rules in `infra/prometheus/rules/baseline.yml`.
+  - *Details*: 7-day median rolling baseline queries (`quantile_over_time(0.5, apm_calls_total[7d:1h])`), current 5m rate/latency comparison, deviation percentage calculation, and anomaly detection PromQL expressions embedded directly in Grafana dashboards (`tracenest_service_catalog.json`).
 
 ---
 
@@ -103,7 +103,7 @@ This document tracks the status of all application-level, service-level, and req
 ### 7. Time-Period Comparison
 
 - [x] **Compare performance across different time periods** (Today vs. previous day, This week vs. previous week, Before vs. after deployment)
-  - *Details*: Prometheus 7-day median rolling baseline rules (`quantile_over_time(0.5, apm_calls_total[7d:1h])`) compared against 5m live rate, deviation percentage calculation, and anomaly panels in `tracenest_service_catalog.json`.
+  - *Details*: Prometheus 7-day median rolling baseline queries (`quantile_over_time(0.5, apm_calls_total[7d:1h])`) compared against 5m live rate, deviation percentage calculation, and embedded anomaly detection panels in `tracenest_service_catalog.json`.
 - [x] **Identify changes in Throughput, Latency, Error Rate, Request Volume**
   - *Details*: Global RPS anomaly list and anomaly threshold alerts (>50% anomaly, >200% severe anomaly).
 

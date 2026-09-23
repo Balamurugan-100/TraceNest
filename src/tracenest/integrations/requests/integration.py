@@ -33,7 +33,6 @@ class RequestsIntegration(BaseIntegration):
                     request_hook=tracenest_request_hook,
                     response_hook=tracenest_response_hook,
                 )
-            self._is_patched = True
         except Exception as exc:
             logger.debug("RequestsInstrumentor patch skipped: %s", exc)
 
@@ -44,9 +43,8 @@ class RequestsIntegration(BaseIntegration):
             instrumentor = RequestsInstrumentor()
             if instrumentor.is_instrumented_by_opentelemetry:
                 instrumentor.uninstrument()
-            self._is_patched = False
-            return True
         except Exception as exc:
             logger.debug("Failed to uninstrument requests: %s", exc)
-            return False
+
+        return super().uninstrument()
 

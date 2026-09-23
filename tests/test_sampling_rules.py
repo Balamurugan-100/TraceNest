@@ -86,3 +86,50 @@ def test_create_tracenest_sampler():
         ignore_endpoints=["/health"],
     )
     assert sampler is not None
+
+
+def test_parameterized_route_template_matching():
+    """Verify endpoint_sample_rules matches against http.route even when url.path is a concrete URL."""
+    sampler = TraceNestRuleBasedSampler(
+        global_sample_rate=0.0,
+        endpoint_sample_rules={
+            "/api/items/{id}/": 1.0,
+            "/api/users/<id>/": 1.0,
+        },
+    )
+
+    # Concrete URL on url.path, parameterized template on http.route
+    res1 = sampler.should_sample(
+        None,
+        12345,
+        "GET /api/items/999/",
+        attributes={
+            "url.path": "/api/items/999/",
+            "http.route": "/api/items/{id}/",
+        },
+    )
+    assert res1.decision == Decision.RECORD_AND_SAMPLE
+
+    res2 = sampler.should_sample(
+        None,
+        12345,
+        "GET /api/users/42/",
+        attributes={
+            "url.path": "/api/users/42/",
+            "http.route": "/api/users/<id>/",
+        },
+    )
+    assert res2.decision == Decision.RECORD_AND_SAMPLE
+
+    # Route that does not match rule falls back to global 0.0 -> DROP
+    res3 = sampler.should_sample(
+        None,
+        12345,
+        "GET /api/orders/555/",
+        attributes={
+            "url.path": "/api/orders/555/",
+            "http.route": "/api/orders/{id}/",
+        },
+    )
+    assert res3.decision == Decision.DROP
+

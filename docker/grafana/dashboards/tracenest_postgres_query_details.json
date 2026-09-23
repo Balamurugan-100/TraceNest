@@ -87,7 +87,7 @@
         "type": "datasource"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": [
@@ -124,7 +124,7 @@
         "type": "query"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -153,7 +153,7 @@
         "type": "query"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -165,7 +165,7 @@
         },
         "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", db_system=~\"postgresql|postgres\"}, db_statement)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "SQL Query",
         "multi": false,
         "name": "query",
@@ -981,7 +981,7 @@
             "uid": "${DS_TEMPO}"
           },
           "limit": 30,
-          "query": "{ resource.service.name =~ \"$project\" && span.db.system =~ \"(?i)postgres.*\" && (span.db.operation =~ \"(?i).*$query.*\" || span.db.statement =~ \"(?i).*$query.*\") }",
+          "query": "{ span.db.system =~ \"postgres.*\" }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"

@@ -136,8 +136,8 @@ PostgreSQL execution (Engine / Query Execution)
 2. **Explicit Span Attribution**:
    - Injects `db.connection.pool="pgbouncer"` and `peer.service="pgbouncer"` into span attributes.
    - Distinct visual naming: Prefixes the span with the **`🔵`** blue icon (`🔵 SELECT api_product...`) rather than the direct database icon (**`🐘`**).
-3. **Collector-Side Pool Metrics**:
-   - The OTel Collector runs a dedicated `postgresql/pgbouncer` receiver to scrape pool usage stats (active/waiting clients, server connections), correlating pool metrics with trace wait times.
+3. **Collector-Side Correlation**:
+   - The OTel Collector scrapes PostgreSQL engine metrics (`postgresql_*`), which correlate with span-level database wait and execution times.
 
 ---
 
@@ -151,8 +151,13 @@ A slow query against a read replica has a different investigation path from a sl
 
 The PoC therefore attaches database-role information to database spans where it can be determined reliably.
 
+**How We Detect It:**
+1. **Connection & Alias Heuristics**: `_detect_db_role()` inspects the Django database connection alias (e.g. `replica`, `slave`, `read`) and host/port attributes.
+2. **Explicit Span Attribution**: Emits `db.role` (`primary` or `replica`) on client database spans.
+3. **Multi-DB Routing Parity**: Supports Django multi-database routing topologies and two-tier DB router spans (`db_two_tier_spans=True`).
+
 **Trade-off:**
-Role detection depends on deployment configuration and must remain configurable rather than relying entirely on host-name conventions.
+Role detection depends on deployment configuration and connection naming conventions.
 
 ---
 
@@ -396,6 +401,19 @@ Key areas to measure before full production rollout:
 
 ---
 
+## Decision 19 — Treat HTTP 4xx client errors as StatusCode.OK for server error budget
+
+**Why?**
+
+Following Datadog APM conventions, client-induced errors (`400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `429 Too Many Requests`) are classified as `StatusCode.OK` with `error=False` on the root server span. Only `5xx` server-side errors set `StatusCode.ERROR` and `error=True`.
+
+This ensures that client errors (e.g. bad user credentials or missing resources) do not artificially inflate the service error rate or burn application SLO error budgets in RED metric dashboards.
+
+**Trade-off:**
+This diverges from strict OpenTelemetry semantic conventions (which mark 4xx as error when configured). 4xx status codes are still recorded in `http.status_code` and `http.response.status_code` attributes, so they remain fully queryable in TraceQL and status-breakdown panels.
+
+---
+
 # Decision Summary
 
 | Area                      | PoC Decision                        | Primary Benefit |
@@ -412,10 +430,12 @@ Key areas to measure before full production rollout:
 | **Outbound HTTP Calls**   | Lightweight `requests` Wrapper      | Outbound W3C header injection & visual `🌐` naming |
 | **AWS SDK (Boto3)**       | Lightweight Wrapper                 | Service, operation, and bucket identification |
 | **Metric Generation**     | Server-Side `spanmetrics` Connector | Zero Python CPU/memory overhead for metric math |
+| **4xx Error Policy**      | 4xx = OK (5xx = Error)              | Prevents client errors from skewing server SLO error budgets |
 | **Failure Isolation**     | `SafeSpanExporter` Wrap             | Telemetry errors NEVER crash or slow down user requests |
 | **Reentrancy Safety**     | `reentrant_guard` Context Manager   | Prevents infinite recursion & duplicate span trees |
 | **Spike-to-Trace UX**     | Prometheus Exemplars $\rightarrow$ Tempo | Instant jump from metric spike to trace waterfall |
 | **Data Privacy**          | Pre-Export Sanitization             | PII & credential scrubbing at the application boundary |
 | **Primary Signal**        | Traces (Tempo) + Metrics (Prometheus)| Comprehensive root-cause isolation & high-level health |
 | **PoC Objective**         | Technical Feasibility & Validation  | Validates Datadog APM replacement viability |
+
 

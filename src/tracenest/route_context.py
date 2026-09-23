@@ -54,17 +54,27 @@ def set_request_route(route: Optional[str], method: Optional[str] = None) -> Tup
     return current_route.set(route), current_method.set(method)
 
 
-def reset_request_route(tokens: Tuple[Any, Any]) -> None:
+def reset_request_route(tokens: Optional[Tuple[Any, Any]]) -> None:
     """Reset route/method context vars using tokens from :func:`set_request_route`."""
-    route_token, method_token = tokens
+    if not tokens:
+        current_route.set(None)
+        current_method.set(None)
+        return
+    try:
+        route_token, method_token = tokens
+    except Exception:
+        current_route.set(None)
+        current_method.set(None)
+        return
+
     try:
         current_route.reset(route_token)
     except Exception:
-        pass
+        current_route.set(None)
     try:
         current_method.reset(method_token)
     except Exception:
-        pass
+        current_method.set(None)
 
 
 class RouteEnrichingSpanProcessor(SpanProcessor):

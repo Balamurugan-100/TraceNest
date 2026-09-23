@@ -237,112 +237,109 @@ def traced_get_response(wrapped, instance, args, kwargs):
                 span_attrs["network.protocol.version"] = str(server_proto)
                 span_attrs["http.flavor"] = str(server_proto)
 
+        preresolved_route = _preresolve_route(path)
+        if preresolved_route:
+            span_attrs["http.route"] = preresolved_route
+
         start = time.monotonic()
 
         # Publish the pre-resolved route so child spans started inside the
         # handler carry http.route even though resolver_match is only
         # populated after the handler returns.
-        route_token = set_request_route(_preresolve_route(path), method)
+        route_token = set_request_route(preresolved_route, method)
+        try:
+            with tracer.start_as_current_span(
+                "django.request",
+                context=parent_ctx,
+                kind=SpanKind.SERVER,
+                attributes=span_attrs,
+            ) as span:
+                span_ctx = span.get_span_context()
+                trace_id_hex = _format_trace_id(span_ctx.trace_id)
+                span_id_hex = _format_span_id(span_ctx.span_id)
+                request._tp_span = span
+                request.trace_id = trace_id_hex
+                request.span_id = span_id_hex
+                _apply_custom_tags(span, request)
 
-        with tracer.start_as_current_span(
-            "django.request",
-            context=parent_ctx,
-            kind=SpanKind.SERVER,
-            attributes=span_attrs,
-        ) as span:
-            span_ctx = span.get_span_context()
-            trace_id_hex = _format_trace_id(span_ctx.trace_id)
-            span_id_hex = _format_span_id(span_ctx.span_id)
-            request._tp_span = span
-            request.trace_id = trace_id_hex
-            request.span_id = span_id_hex
-            _apply_custom_tags(span, request)
-
-            status_code = 200
-            error = False
-            route_for_metrics = path
-            try:
-                response = wrapped(*args, **kwargs)
-                status_code = getattr(response, "status_code", 200)
-                norm_route = _normalize_route(request, path)
-                route_for_metrics = norm_route
-                view_name = _resolve_view_name(request, method)
-
-                span.set_attribute("http.route", norm_route)
-                span.set_attribute("http.response.status_code", status_code)
-                span.set_attribute("http.status_code", status_code)
-                span.set_attribute("django.view", str(view_name))
-                span.set_attribute("django.view.name", str(view_name))
-                span.set_attribute("resource.name", f"{method} {norm_route}")
-
-                import http
+                status_code = 200
+                error = False
+                route_for_metrics = path
                 try:
-                    phrase = http.HTTPStatus(status_code).phrase
-                    span.set_attribute("http.status_text", phrase)
-                    span.set_attribute("http.response.status_text", phrase)
-                except Exception:
-                    pass
+                    response = wrapped(*args, **kwargs)
+                    status_code = getattr(response, "status_code", 200)
+                    norm_route = _normalize_route(request, path)
+                    route_for_metrics = norm_route
+                    view_name = _resolve_view_name(request, method)
 
-                user = getattr(request, "user", None)
-                if user and getattr(user, "is_authenticated", False):
+                    span.set_attribute("http.route", norm_route)
+                    span.set_attribute("http.response.status_code", status_code)
+                    span.set_attribute("http.status_code", status_code)
+                    span.set_attribute("django.view", str(view_name))
+                    span.set_attribute("django.view.name", str(view_name))
+                    span.set_attribute("resource.name", f"{method} {norm_route}")
+
+                    import http
                     try:
-                        user_id = str(getattr(user, "pk", getattr(user, "id", "")))
-                        if user_id:
-                            span.set_attribute("usr.id", user_id)
-                            span.set_attribute("user.id", user_id)
-                            span.set_attribute("enduser.id", user_id)
-                        username = getattr(user, "username", None) or (user.get_username() if hasattr(user, "get_username") else None)
-                        if username:
-                            span.set_attribute("usr.username", str(username))
-                            span.set_attribute("user.username", str(username))
-                        email = getattr(user, "email", None)
-                        if email:
-                            span.set_attribute("usr.email", str(email))
-                            span.set_attribute("user.email", str(email))
-                        span.set_attribute("user.is_authenticated", True)
+                        phrase = http.HTTPStatus(status_code).phrase
+                        span.set_attribute("http.status_text", phrase)
+                        span.set_attribute("http.response.status_text", phrase)
                     except Exception:
                         pass
 
-                if status_code >= 500:
+                    user = getattr(request, "user", None)
+                    if user and getattr(user, "is_authenticated", False):
+                        try:
+                            user_id = str(getattr(user, "pk", getattr(user, "id", "")))
+                            if user_id:
+                                span.set_attribute("usr.id", user_id)
+                                span.set_attribute("user.id", user_id)
+                                span.set_attribute("enduser.id", user_id)
+                            span.set_attribute("user.is_authenticated", True)
+                        except Exception:
+                            pass
+
+                    if status_code >= 500:
+                        error = True
+                        span.set_attribute("error", True)
+                        span.set_attribute("error.type", str(status_code))
+                        span.set_status(StatusCode.ERROR, description=f"HTTP {status_code}")
+                    elif status_code >= 400:
+                        span.set_attribute("error", False)
+                        span.set_status(StatusCode.OK)
+                    else:
+                        span.set_attribute("error", False)
+                        span.set_status(StatusCode.OK)
+
+                    if hasattr(response, "headers") or hasattr(response, "__setitem__"):
+                        try:
+                            response["X-Trace-ID"] = trace_id_hex
+                            response["X-Span-ID"] = span_id_hex
+                            # W3C trace context so downstream consumers can correlate
+                            # the response back to this trace without knowing our
+                            # custom headers.
+                            response["traceparent"] = f"00-{trace_id_hex}-{span_id_hex}-01"
+                        except Exception:
+                            pass
+
+                    return response
+                except Exception as exc:
                     error = True
-                    span.set_attribute("error", True)
-                    span.set_attribute("error.type", str(status_code))
-                    span.set_status(StatusCode.ERROR, description=f"HTTP {status_code}")
-                elif status_code >= 400:
-                    span.set_attribute("error", False)
-                    span.set_status(StatusCode.OK)
-                else:
-                    span.set_attribute("error", False)
-                    span.set_status(StatusCode.OK)
-
-                if hasattr(response, "headers") or hasattr(response, "__setitem__"):
+                    status_code = 500
                     try:
-                        response["X-Trace-ID"] = trace_id_hex
-                        response["X-Span-ID"] = span_id_hex
-                        # W3C trace context so downstream consumers can correlate
-                        # the response back to this trace without knowing our
-                        # custom headers.
-                        response["traceparent"] = f"00-{trace_id_hex}-{span_id_hex}-01"
+                        route_for_metrics = _normalize_route(request, path)
                     except Exception:
-                        pass
-
-                return response
-            except Exception as exc:
-                error = True
-                status_code = 500
-                try:
-                    route_for_metrics = _normalize_route(request, path)
-                except Exception:
-                    route_for_metrics = path
-                span.set_attribute("http.route", route_for_metrics)
-                span.set_attribute("http.response.status_code", 500)
-                span.set_attribute("http.status_code", 500)
-                span.set_attribute("error", True)
-                span.set_attribute("error.type", exc.__class__.__name__)
-                span.record_exception(exc)
-                span.set_status(StatusCode.ERROR, description=str(exc))
-                raise
-            finally:
-                duration_ms = (time.monotonic() - start) * 1000.0
-                span.set_attribute("http.request.duration_ms", duration_ms)
-                reset_request_route(route_token)
+                        route_for_metrics = path
+                    span.set_attribute("http.route", route_for_metrics)
+                    span.set_attribute("http.response.status_code", 500)
+                    span.set_attribute("http.status_code", 500)
+                    span.set_attribute("error", True)
+                    span.set_attribute("error.type", exc.__class__.__name__)
+                    span.record_exception(exc)
+                    span.set_status(StatusCode.ERROR, description=str(exc))
+                    raise
+                finally:
+                    duration_ms = (time.monotonic() - start) * 1000.0
+                    span.set_attribute("http.request.duration_ms", duration_ms)
+        finally:
+            reset_request_route(route_token)

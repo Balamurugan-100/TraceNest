@@ -32,7 +32,6 @@ class RedisIntegration(BaseIntegration):
             instrumentor = RedisInstrumentor()
             if not instrumentor.is_instrumented_by_opentelemetry:
                 instrumentor.instrument()
-            self._is_patched = True
             logger.debug("TraceNest: Official RedisInstrumentor applied successfully.")
         except Exception as exc:
             logger.debug("RedisInstrumentor patch skipped: %s", exc)
@@ -44,9 +43,8 @@ class RedisIntegration(BaseIntegration):
             instrumentor = RedisInstrumentor()
             if instrumentor.is_instrumented_by_opentelemetry:
                 instrumentor.uninstrument()
-            self._is_patched = False
-            return True
         except Exception as exc:
             logger.debug("Failed to uninstrument redis: %s", exc)
-            return False
+
+        return super().uninstrument()
 

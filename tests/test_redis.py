@@ -89,12 +89,12 @@ def test_redis_integration_apply_patch_and_uninstrument(monkeypatch):
         mock_inst.is_instrumented_by_opentelemetry = False
         mock_inst_cls.return_value = mock_inst
 
-        integ._apply_patch()
-        assert integ._is_patched is True
+        assert integ.instrument() is True
+        assert integ._instrumented is True
         mock_inst.instrument.assert_called_once()
 
         # Uninstrument
         mock_inst.is_instrumented_by_opentelemetry = True
         assert integ.uninstrument() is True
-        assert integ._is_patched is False
+        assert integ._instrumented is False
         mock_inst.uninstrument.assert_called_once()

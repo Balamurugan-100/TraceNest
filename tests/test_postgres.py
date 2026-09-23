@@ -602,6 +602,66 @@ def test_no_duplicate_spans_when_cursorwrapper_and_execute_wrappers_coexist():
     assert spans[0].attributes["db.instance"] == "default"
 
 
+def test_reentrant_guard_thread_isolation():
+    """Verify reentrant_guard with contextvars isolates concurrent threads sharing the same instance."""
+    import threading
+    from tracenest.tracing import reentrant_guard
+
+    class SharedConnection:
+        pass
+
+    conn = SharedConnection()
+    results = {}
+
+    def worker(worker_id: int):
+        with reentrant_guard(conn, "_tp_in_exec") as should_trace_1:
+            # Nested call on same thread -> suppressed
+            with reentrant_guard(conn, "_tp_in_exec") as should_trace_nested:
+                results[worker_id] = (should_trace_1, should_trace_nested)
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # All threads got (True, False) independently without blocking or interfering
+    for i in range(5):
+        assert results[i] == (True, False)
+
+
+def test_single_exception_recorded_on_sql_error():
+    """Verify an erroring SQL query produces exactly one exception event in its span."""
+    tracenest._reset_for_testing()
+    exporter = InMemorySpanExporter()
+    tracenest.init(project_name="error-svc", exporter=exporter, export_batch=False)
+
+    from tracenest.integrations.postgres.cursor import tracenest_django_db_execute_wrapper
+
+    class FailingCursor:
+        pass
+
+    def bad_execute(sql, params, many, context):
+        raise ValueError("syntax error in SQL")
+
+    cursor = FailingCursor()
+    conn = MockDatabaseConnection(alias="default", vendor="postgresql", host="db", port=5432, db_name="test_db")
+    context = {"cursor": cursor, "connection": conn}
+
+    with pytest.raises(ValueError):
+        tracenest_django_db_execute_wrapper(bad_execute, "SELECT BAD SYNTAX", None, False, context)
+
+    spans = exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert span.status.status_code == StatusCode.ERROR
+    # Verify exactly one exception event is recorded on the span
+    exception_events = [e for e in span.events if e.name == "exception"]
+    assert len(exception_events) == 1
+    assert exception_events[0].attributes["exception.type"] == "ValueError"
+
+
+
 
 
 

@@ -6,18 +6,30 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  postgresql/pgbouncer:
-    endpoint: pgbouncer:6432
+  postgresql:
+    endpoint: postgres:5432
     transport: tcp
     username: django
     password: django
     databases:
-      - pgbouncer
+      - django_otel
     tls:
       insecure: true
     collection_interval: 10s
 
 processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 70
+    spike_limit_percentage: 20
+
+  resource/drop_ephemeral:
+    attributes:
+      - key: service.instance.id
+        action: delete
+      - key: process.pid
+        action: delete
+
   batch:
     timeout: 1s
     send_batch_size: 256
@@ -32,32 +44,16 @@ connectors:
       - name: http.request.method
       - name: http.status_code
       - name: http.response.status_code
-      - name: http.target
       - name: http.route
-      - name: url.path
       - name: db.system
-      - name: db.system.name
       - name: db.operation
-      - name: db.operation.name
-      - name: db.query.summary
-      - name: db.connection.pool
       - name: db.instance
-      - name: db.namespace
-      - name: db.role
       - name: db.statement
-      - name: net.peer.name
       - name: server.address
       - name: server.port
-      - name: peer.service
       - name: error
-      - name: django.middleware
-      - name: django.middleware.name
-      - name: django.middleware.method
-      - name: django.view
-      - name: django.view.name
-      - name: django.cache.hit
-      - name: django.cache.backend
-    dimensions_cache_size: 5000
+      - name: span.type
+    dimensions_cache_size: 1500
 
 exporters:
   otlp/tempo:
@@ -71,18 +67,15 @@ exporters:
     resource_to_telemetry_conversion:
       enabled: true
 
-  debug:
-    verbosity: basic
-
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp/tempo, spanmetrics, debug]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, spanmetrics]
     metrics:
-      receivers: [otlp, spanmetrics, postgresql/pgbouncer]
-      processors: [batch]
+      receivers: [otlp, spanmetrics, postgresql]
+      processors: [memory_limiter, resource/drop_ephemeral, batch]
       exporters: [prometheus]
 
   telemetry:

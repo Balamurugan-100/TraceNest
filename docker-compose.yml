@@ -26,6 +26,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
+      - tp-observability-net
 
   pgbouncer:
     image: pgbouncer/pgbouncer:latest
@@ -228,6 +231,11 @@ services:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: tp-otel-collector
     command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
     volumes:
       - ./docker/otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
@@ -235,7 +243,10 @@ services:
       - "4318:4318" # OTLP HTTP receiver (used by tp_obs_v3 SDK)
       - "8889:8889" # Prometheus metrics exporter
     depends_on:
-      - tempo
+      tempo:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     networks:
       - default
       - tp-observability-net
@@ -259,6 +270,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
+      - "--enable-feature=exemplar-storage"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus

@@ -82,7 +82,7 @@ class SDKConfig:
     on_request_span: Optional[Callable] = None
     ignore_endpoints: List[str] = field(default_factory=list)
     endpoint_sample_rules: Dict[str, float] = field(default_factory=dict)
-    sample_errors: bool = True
+    sample_errors: bool = True  # Retained for config parity; error retention is enforced via collector tail-sampling
 
     @classmethod
     def from_env_and_kwargs(
@@ -109,10 +109,13 @@ class SDKConfig:
         resolved_project = (
             project_name
             or project
+            or extra.get("service_name")
+            or extra.get("service")
             or os.getenv("TRACENEST_PROJECT_NAME")
             or os.getenv("TRACENEST_PROJECT")
-            or os.getenv("OTEL_PROJECT_NAME")
+            or os.getenv("TRACENEST_SERVICE_NAME")
             or os.getenv("OTEL_SERVICE_NAME")
+            or os.getenv("OTEL_PROJECT_NAME")
             or os.getenv("TP_OBS_PROJECT_NAME")
             or _detect_django_project_name()
             or "unknown-project"

@@ -1,11 +1,16 @@
 """Shared tracing primitives that remove boilerplate from integration wrappers."""
 
 import contextlib
-from typing import Any, Dict, Iterator, Optional
+import contextvars
+from typing import Any, Dict, FrozenSet, Iterator, Optional, Tuple
 
 from opentelemetry.trace import Context, Span, SpanKind, StatusCode, get_tracer
 
 from tracenest.route_context import get_current_method, get_current_route
+
+_active_reentrant_guards: contextvars.ContextVar[FrozenSet[Tuple[int, str]]] = contextvars.ContextVar(
+    "_tracenest_active_guards", default=frozenset()
+)
 
 
 def _with_request_route(attributes: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -47,6 +52,8 @@ def traced_span(
         kind=kind,
         attributes=_with_request_route(attributes),
         context=context,
+        record_exception=False,
+        set_status_on_exception=False,
     ) as span:
         try:
             yield span
@@ -64,17 +71,25 @@ def traced_span(
 @contextlib.contextmanager
 def reentrant_guard(instance: Any, attr: str) -> Iterator[bool]:
     """
-    Guard a traced wrapper against recursive invocation on the same instance.
+    Guard a traced wrapper against recursive invocation on the same instance / context.
+
+    Thread-safe and async-safe via contextvars, preventing cross-thread race
+    conditions on shared database connections or cursors.
 
     Yields True for the outermost call (trace) and False when the guard is
-    already held (call through without tracing). The flag is always cleared,
-    even when the wrapped call raises.
+    already held (call through without tracing).
     """
-    if getattr(instance, attr, False):
+    guard_key = (id(instance), attr)
+    active = _active_reentrant_guards.get()
+    if guard_key in active:
         yield False
         return
-    setattr(instance, attr, True)
+
+    token = _active_reentrant_guards.set(active | {guard_key})
     try:
         yield True
     finally:
-        setattr(instance, attr, False)
+        try:
+            _active_reentrant_guards.reset(token)
+        except Exception:
+            pass

@@ -97,7 +97,7 @@
         "type": "datasource"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": [
@@ -134,7 +134,7 @@
         "type": "query"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -163,7 +163,7 @@
         "type": "query"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -175,7 +175,7 @@
         },
         "definition": "label_values(apm_calls_total{cluster_name=~\"$cluster\", project_name=~\"$project\", http_method=~\"$http_method\"}, http_route)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Endpoint",
         "multi": false,
         "name": "endpoint",
@@ -186,7 +186,7 @@
         "type": "query"
       },
       {
-        "allValue": null,
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -1135,7 +1135,7 @@
             "uid": "${DS_TEMPO}"
           },
           "limit": 30,
-          "query": "{ resource.service.name =~ \"$project\" && (span.http.route =~ \".*$endpoint.*\" || span.http.target =~ \".*$endpoint.*\" || name =~ \".*$endpoint.*\") }",
+          "query": "{ span.http.route =~ \".*${endpoint:raw}.*\" || name =~ \".*${endpoint:raw}.*\" }",
           "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"

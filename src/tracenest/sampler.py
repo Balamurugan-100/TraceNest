@@ -49,33 +49,38 @@ class TraceNestRuleBasedSampler(Sampler):
     ) -> SamplingResult:
         attributes = attributes or {}
 
-        # Extract target request path from common OpenTelemetry attribute conventions or span name
-        target_path = (
-            attributes.get("http.target")
-            or attributes.get("url.path")
-            or attributes.get("http.route")
-            or name
-        )
-        if isinstance(target_path, str):
-            # Clean query parameters if present in http.target (e.g., /health?verbose=1 -> /health)
-            clean_path = target_path.split("?")[0]
+        # Extract candidate target request paths from OpenTelemetry attribute conventions and span name
+        candidates = []
+        for key in ("http.route", "url.path", "http.target"):
+            val = attributes.get(key)
+            if isinstance(val, str) and val.strip():
+                clean = val.split("?")[0].strip()
+                if clean and clean not in candidates:
+                    candidates.append(clean)
+        if name and isinstance(name, str) and name.strip():
+            clean_name = name.split("?")[0].strip()
+            if clean_name and clean_name not in candidates:
+                candidates.append(clean_name)
 
+        if candidates:
             # 1. Check ignore patterns
-            for pattern in self.ignore_endpoints:
-                if fnmatch.fnmatch(clean_path, pattern):
-                    return SamplingResult(Decision.DROP)
+            for candidate in candidates:
+                for pattern in self.ignore_endpoints:
+                    if fnmatch.fnmatch(candidate, pattern):
+                        return SamplingResult(Decision.DROP)
 
             # 2. Check custom endpoint sampling rules
-            for pattern, ratio_sampler in self._rule_ratio_samplers.items():
-                if fnmatch.fnmatch(clean_path, pattern):
-                    return ratio_sampler.should_sample(
-                        parent_context=parent_context,
-                        trace_id=trace_id,
-                        name=name,
-                        kind=kind,
-                        attributes=attributes,
-                        links=links,
-                    )
+            for candidate in candidates:
+                for pattern, ratio_sampler in self._rule_ratio_samplers.items():
+                    if fnmatch.fnmatch(candidate, pattern):
+                        return ratio_sampler.should_sample(
+                            parent_context=parent_context,
+                            trace_id=trace_id,
+                            name=name,
+                            kind=kind,
+                            attributes=attributes,
+                            links=links,
+                        )
 
         # 3. Fallback to global sample rate
         return self._global_ratio_sampler.should_sample(

@@ -1,16 +1,21 @@
 # TraceNest
 
-TraceNest is an OpenTelemetry-based observability SDK for synchronous Django applications. It creates a Django request waterfall without application-code changes, then exports standard OTLP traces and metrics to an OpenTelemetry Collector.
+TraceNest is an OpenTelemetry-based observability SDK for synchronous Django applications. It creates a Django request waterfall without application-code changes, then exports standard OTLP traces to an OpenTelemetry Collector (which automatically derives RED metrics in real time).
 
-> [!NOTE]
-> For a comprehensive technical deep-dive into TraceNest's internals, OTel defaults integration, PgBouncer pool topology, visual span icon system, and SQL/URL sanitization, read the [**Architecture Guide**](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docs/Architecture.md), [**How Instrumentation Works**](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docs/How_instrumentation_works.md), and [**Decision Log**](file:///Users/bala/workspace/datadog-replacement/sdk-v3/docs/Decisions.md).
+## Documentation
 
-## Repository Structure
+Detailed guides and architecture references are available in the [`docs/`](docs/) directory:
 
-The repository is organized into two main subdirectories:
-
-- **[`sdk/`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/sdk)**: Contains the core `tracenest` Python SDK package source, package specifications (`pyproject.toml`), and SDK documentation.
-- **[`harness/`](file:///Users/bala/workspace/datadog-replacement/sdk-v3/harness)**: Contains unit/integration test suites (`harness/tests`), sample Django applications (`sample-app` and `sample-django-lite-app`), Docker observability infrastructure configs (`docker/`), Grafana dashboards (`dashboards/`), docker-compose setup, and traffic generator scripts (`scripts/`).
+| Document | Description |
+| :--- | :--- |
+| [**Architecture & System Design**](docs/Architecture.md) | High-level data flow, OTel collector pipelines, ports, and Tempo/Prometheus topology |
+| [**Observability Fundamentals**](docs/Basics.md) | Introduction to OpenTelemetry concepts, RED/USE methods, and distributed tracing |
+| [**Supported Components**](docs/Components.md) | Details on Django, PostgreSQL, PgBouncer, Redis, HTTP (`requests`), and Boto3 tracing |
+| [**How Instrumentation Works**](docs/How_instrumentation_works.md) | Internal mechanics of `wrapt` monkey-patching, `contextvars`, and span lifecycle |
+| [**Custom Instrumentation Guide**](docs/Custom_instrumentation.md) | Step-by-step guide for authoring custom integrations and wrappers |
+| [**Grafana Dashboards Guide**](docs/Dashboards.md) | Navigation map, triage workflows, PromQL metrics, and 8 pre-provisioned dashboards |
+| [**Decision Log (ADRs)**](docs/Decisions.md) | Key architectural decisions, trade-offs, and technical rationale |
+| [**Resource Usage & Load Test**](docs/Test_resource_usage.md) | Collector performance benchmarks, CPU/memory bounds, and sizing guidelines |
 
 ---
 
@@ -65,7 +70,7 @@ A single `init()` call handles everything — it auto-detects installed integrat
 import tracenest
 
 tracenest.init(
-    service="my-django-app",
+    project_name="my-django-app",
     environment="production",
     endpoint="http://otel-collector:4318",
 )
@@ -84,7 +89,7 @@ MIDDLEWARE = [
 ]
 ```
 
-Configuration comes from environment variables (`TRACENEST_SERVICE_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, etc.).
+Configuration comes from environment variables (`TRACENEST_PROJECT_NAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, etc.).
 
 ### Option 3: Environment variables only
 
@@ -117,7 +122,7 @@ def setup_telemetry():
         return
     try:
         tracenest.init(
-            service=os.environ.get("TRACENEST_SERVICE_NAME", "my-app"),
+            project_name=os.environ.get("TRACENEST_PROJECT_NAME", "my-app"),
             environment=os.environ.get("TRACENEST_ENVIRONMENT", "development"),
             endpoint=os.environ.get("TRACENEST_ENDPOINT", "http://otel-collector:4318"),
         )
@@ -134,7 +139,7 @@ Explicit `init()` arguments take precedence over environment variables, which ta
 
 | Setting | Environment variable | Default |
 | --- | --- | --- |
-| Service name | `TRACENEST_SERVICE_NAME` or `OTEL_SERVICE_NAME` | `unknown-service` |
+| Project name | `TRACENEST_PROJECT_NAME` or `OTEL_SERVICE_NAME` | `unknown-project` |
 | Environment | `TRACENEST_ENVIRONMENT` or `OTEL_ENVIRONMENT` | `development` |
 | Version | `TRACENEST_VERSION` or `OTEL_SERVICE_VERSION` | `0.1.0` |
 | OTLP base endpoint | `TRACENEST_ENDPOINT` or `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` |
@@ -165,15 +170,16 @@ tracenest.init(
 
 ## Trace and metric data
 
-| Signal | Name | Purpose |
-| --- | --- | --- |
-| Trace | `django.request` | Root `SERVER` span for each HTTP request |
-| Trace | `django.middleware.<name>` | Class-based middleware execution |
-| Trace | `django.view.<name>` | Django/DRF view execution |
-| Trace | `django.template: <name>` | Template and included-template rendering |
-| Metric | `http.server.requests` | Request counter |
-| Metric | `http.server.errors` | 5xx/error counter |
-| Metric | `http.server.request.duration` | Request duration histogram, in seconds |
+The SDK emits standard OpenTelemetry spans. The OpenTelemetry Collector's `spanmetrics` connector then automatically derives RED metrics without client-side metric calculation overhead:
+
+| Telemetry | Name | Generated By | Purpose |
+| --- | --- | --- | --- |
+| Trace | `django.request` | TraceNest SDK | Root `SERVER` span for each HTTP request |
+| Trace | `django.middleware.<name>` | TraceNest SDK | Class-based middleware execution |
+| Trace | `django.view.<name>` | TraceNest SDK | Django/DRF view execution |
+| Trace | `django.template: <name>` | TraceNest SDK | Template and included-template rendering |
+| Metric | `apm_calls_total` | Collector (`spanmetrics`) | Request & error counter partitioned by route and status |
+| Metric | `apm_duration_milliseconds_bucket` | Collector (`spanmetrics`) | Latency histogram buckets for P50/P90/P95/P99 duration |
 
 The SDK extracts an incoming W3C `traceparent` header, so a Django request continues an existing distributed trace. Traced responses include `X-Trace-ID` and `X-Span-ID` headers for correlation.
 
@@ -200,8 +206,11 @@ Select a `django.request` trace to open its full waterfall. Middleware timings a
 .venv/bin/python -m pytest -q
 ```
 
-The Django tests cover parent-child span relationships, route normalization, errors, metrics, repeated instrumentation, and clean uninstrumentation.
+- **Local Unit Tests (`pytest`)**: Runs hermetic test suites using in-memory SQLite and in-memory span exporters, covering parent-child span waterfalls, route normalization, PII sanitization, sampler rules, error recording, and clean uninstrumentation.
+- **End-to-End Integration Testing**: Full topologies (PostgreSQL primary/replica routing, PgBouncer pooling, Redis pipelines, live OTel Collector spanmetrics, Prometheus, and Grafana waterfalls) are verified via `docker compose up --build`.
 
-## Current boundaries
-
-This level is limited to the Django request-to-response lifecycle with full Grafana dashboards for Django. Database, Redis, and outbound HTTP instrumentation are implemented in the SDK and generate spans/metrics, but dedicated dashboards for these services are deferred beyond the current PoC scope. ASGI, async views, async middleware, Celery, and streaming-response instrumentation are not supported.
+## Scope and capabilities
+ 
+- **Supported Frameworks & Storage**: Full auto-instrumentation for Django (WSGI/synchronous), PostgreSQL (primary & replica routing), PgBouncer connection pooling, Redis caching & pipelines, HTTP client (`requests`), and AWS Boto3 SDK.
+- **Dashboards**: 8 pre-provisioned Grafana dashboards covering Service Catalog, Needs Attention (triage), Django Overview & Endpoints, PostgreSQL Overview & Query Details, and Redis Overview & Commands.
+- **Out of Current Scope**: ASGI / async views / async middleware, Celery background tasks, and streaming HTTP responses.

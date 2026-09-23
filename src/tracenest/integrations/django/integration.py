@@ -134,14 +134,6 @@ class DjangoIntegration(BaseIntegration):
 
     def _remove_patch(self) -> None:
         try:
-            from opentelemetry.instrumentation.django import DjangoInstrumentor
-
-            instrumentor = DjangoInstrumentor()
-            if instrumentor.is_instrumented_by_opentelemetry:
-                instrumentor.uninstrument()
-        except Exception:
-            pass
-        try:
             from django.core.handlers.base import BaseHandler
 
             if hasattr(BaseHandler, "_tp_middleware_instrumented"):

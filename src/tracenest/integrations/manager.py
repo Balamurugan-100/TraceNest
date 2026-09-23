@@ -9,21 +9,13 @@ from tracenest.integrations.base import BaseIntegration
 
 logger = logging.getLogger("tracenest.integrations")
 
-# Default mapping of integration names to their module and class paths
+# Default mapping of canonical integration names to their module and class paths
 _BUILTIN_INTEGRATIONS: Dict[str, str] = {
     "django": "tracenest.integrations.django.DjangoIntegration",
     "postgres": "tracenest.integrations.postgres.PostgresIntegration",
-    "postgresql": "tracenest.integrations.postgres.PostgresIntegration",
-    "psycopg2": "tracenest.integrations.postgres.PostgresIntegration",
     "redis": "tracenest.integrations.redis.RedisIntegration",
     "requests": "tracenest.integrations.requests.RequestsIntegration",
-    "http": "tracenest.integrations.requests.RequestsIntegration",
-    "urllib3": "tracenest.integrations.requests.RequestsIntegration",
     "boto": "tracenest.integrations.boto.BotoIntegration",
-    "boto3": "tracenest.integrations.boto.BotoIntegration",
-    "botocore": "tracenest.integrations.boto.BotoIntegration",
-    "aws": "tracenest.integrations.boto.BotoIntegration",
-    "s3": "tracenest.integrations.boto.BotoIntegration",
 }
 
 _INTEGRATION_ALIASES: Dict[str, str] = {
@@ -47,20 +39,28 @@ class IntegrationManager:
             _BUILTIN_INTEGRATIONS
         )
         self._aliases: Dict[str, str] = dict(_INTEGRATION_ALIASES)
+        for alias, canonical in self._aliases.items():
+            if canonical in _BUILTIN_INTEGRATIONS and alias not in self._registered_classes:
+                self._registered_classes[alias] = _BUILTIN_INTEGRATIONS[canonical]
         self._active_instances: Dict[str, BaseIntegration] = {}
 
     def register(
         self,
         name: str,
         integration: Union[Type[BaseIntegration], str],
+        alias_for: Optional[str] = None,
     ) -> None:
         """Register a new or custom integration class."""
-        self._registered_classes[name.lower()] = integration
+        key = name.lower()
+        if alias_for:
+            self._aliases[key] = alias_for.lower()
+        else:
+            self._registered_classes[key] = integration
 
     def get(self, name: str) -> Optional[BaseIntegration]:
-        """Get an active integration instance by name."""
+        """Get an active integration instance by name or alias."""
         canonical = self._aliases.get(name.lower(), name.lower())
-        return self._active_instances.get(canonical) or self._active_instances.get(name.lower())
+        return self._active_instances.get(canonical)
 
     def _resolve_class(self, entry: Union[Type[BaseIntegration], str]) -> Optional[Type[BaseIntegration]]:
         """Resolve a class reference from string or return class directly."""

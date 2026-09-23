@@ -29,7 +29,7 @@ The observability stack consists of four core infrastructure components working 
  ┌───────────────────────────┐   ┌───────────────────────────┐
  │       Grafana Tempo       │   │        Prometheus         │
  │      (Trace Storage)      │   │     (Metrics Storage)     │
- │  Stores raw spans & DAGs  │   │ Scrapes metrics every 5s  │
+ │  Stores raw spans & DAGs  │   │ Scrapes metrics every 10s │
  └─────────────┬─────────────┘   └──────────────┬────────────┘
                │                                │
                │ HTTP Query (Port 3200)         │ PromQL (Port 9090)
@@ -52,7 +52,7 @@ The observability stack consists of four core infrastructure components working 
 | **OpenTelemetry Collector** | `otel/opentelemetry-collector-contrib:0.96.0` | Ingestion, processing, and metrics generation | `4317` (gRPC)<br>`4318` (HTTP)<br>`8889` (Metrics) | `tempo:4317` (Traces)<br>Prometheus scrapes `:8889` |
 | **Grafana Tempo** | `grafana/tempo:2.4.1` | Distributed trace storage and TraceQL query engine | `4317` (gRPC OTLP)<br>`3200` (HTTP API) | Local disk (`/var/tempo`) |
 | **Prometheus** | `prom/prometheus:v2.51.0` | Time-series database for throughput, latency, and errors | `9090` (Web UI & API) | Scrapes `otel-collector:8889` |
-| **Grafana** | `grafana/grafana:10.4.1` | Visualization, APM dashboards, and waterfall flamegraphs | `3000` (Web UI) | `prometheus:9090`<br>`tempo:3200` |
+| **Grafana** | `grafana/grafana:12.4.10` | Visualization, APM dashboards, and waterfall flamegraphs | `3000` (Web UI) | `prometheus:9090`<br>`tempo:3200` |
 
 ---
 
@@ -70,24 +70,24 @@ The OTel Collector is the central nervous system of the observability pipeline. 
                                               └──► [Spanmetrics Connector]
                                                            │
  METRICS PIPELINE:                                         ▼
-   [Spanmetrics / PgBouncer] ──► [Batch Processor] ──► [Prometheus Exporter :8889]
+   [Spanmetrics / PostgreSQL] ──► [Batch Processor] ──► [Prometheus Exporter :8889]
  ─────────────────────────────────────────────────────────────────────────────
 ```
 
 - **Receivers**:
   - `otlp/http` (port `4318`): Receives JSON/Protobuf trace payloads from Python applications.
   - `otlp/grpc` (port `4317`): Receives gRPC trace payloads.
-  - `postgresql/pgbouncer`: Scrapes connection pool metrics from PgBouncer every 10s.
+  - `postgresql` (port `5432`): Scrapes PostgreSQL database engine metrics every 10s.
 - **Processors**:
   - `batch`: Buffers telemetry in memory (1-second timeout or 256 items) to minimize network overhead and maximize throughput.
 - **Connectors (`spanmetrics`)**:
   - Automatically derives RED metrics (**R**ate, **E**rrors, **D**uration) directly from raw trace spans in real time.
   - **Key Benefit**: Keeps the application SDK lightweight and fast — apps only emit spans, while the collector generates the metrics without extra client-side CPU or memory overhead.
   - Generates explicit latency histogram buckets (`2ms`, `5ms`, `10ms`, `25ms`, `50ms`, `100ms`, `250ms`, `500ms`, `1s`, `2.5s`, `5s`, `10s`).
-  - Preserves critical high-value dimensions like `http.route`, `http.status_code`, `db.statement`, `db.instance`, `db.role`, `django.view`, and `django.middleware`.
+  - Preserves critical high-value dimensions like `http.method`, `http.status_code`, `http.route`, `db.system`, `db.operation`, `db.instance`, `db.statement`, `server.address`, `server.port`, `error`, and `span.type`.
 - **Exporters**:
   - `otlp/tempo`: Sends complete traces via gRPC to Tempo (`tempo:4317`).
-  - `prometheus`: Exposes derived spanmetrics on `0.0.0.0:8889` under the `apm_` namespace (e.g. `apm_calls_total`, `apm_calls_duration_seconds_bucket`).
+  - `prometheus`: Exposes derived spanmetrics on `0.0.0.0:8889` under the `apm_` namespace (e.g. `apm_calls_total`, `apm_duration_milliseconds_bucket`).
 
 ---
 
@@ -112,11 +112,11 @@ Tempo is a high-volume, cost-effective distributed tracing backend.
 Prometheus stores numerical time-series metrics used for graphs, rate calculations, and alerts.
 
 - **Scrape Configuration**:
-  - Scrapes the OTel Collector endpoint (`otel-collector:8889`) every **5 seconds**.
+  - Scrapes the OTel Collector endpoint (`otel-collector:8889`) every **10 seconds**.
 - **PromQL Metrics Stored**:
-  - `apm_calls_total`: Request counters partitioned by service, route, status code, and error state.
-  - `apm_calls_duration_seconds_bucket`: Latency histogram buckets for computing P50, P90, P95, and P99 percentiles via `histogram_quantile()`.
-  - `pgbouncer_*`: Connection pool stats (active clients, waiting queries, pool saturation).
+  - `apm_calls_total`: Request counters partitioned by service, route, status code, error state, and database system (PgBouncer is distinguished via span name prefix `🔵` and `server.address`/`db.system`).
+  - `apm_duration_milliseconds_bucket`: Latency histogram buckets for computing P50, P90, P95, and P99 percentiles via `histogram_quantile()`.
+  - `postgresql_*`: Database engine metrics (locks, operations, connections).
 - **Baseline Calculations**:
   - Evaluates rolling baseline rules (e.g., 7-day median comparison) to detect throughput anomalies.
 
@@ -156,7 +156,7 @@ Here is the exact lifecycle of telemetry during an HTTP request:
 4. OTel Collector:
    - Passes spans to `spanmetrics` connector -> updates `apm_calls_total` and latency histograms.
    - Forwards raw spans to `tempo:4317`.
-5. Prometheus scrapes `otel-collector:8889` every 5 seconds.
+5. Prometheus scrapes `otel-collector:8889` every 10 seconds.
 6. Engineer opens Grafana at `http://localhost:3000`:
    - Prometheus data renders live RPS, P95 latency, and error rate graphs.
    - Clicking an endpoint or trace link opens the Tempo waterfall showing exact line-by-line execution times.

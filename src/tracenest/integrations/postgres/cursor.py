@@ -211,20 +211,13 @@ def tracenest_django_db_execute_wrapper(
             attributes=span_attrs,
             tracer_name="tracenest.postgres",
         ) as span:
-            try:
-                with suppress_db_instrumentation():
-                    result = execute(sql, params, many, context)
-                rowcount = getattr(cursor, "rowcount", None)
-                if rowcount is not None and rowcount >= 0:
-                    span.set_attribute("db.row_count", rowcount)
-                    span.set_attribute("db.response.returned_rows", rowcount)
-                return result
-            except Exception as exc:
-                span.record_exception(exc)
-                span.set_attribute("error", True)
-                span.set_attribute("error.type", exc.__class__.__name__)
-                span.set_status(StatusCode.ERROR, description=str(exc))
-                raise
+            with suppress_db_instrumentation():
+                result = execute(sql, params, many, context)
+            rowcount = getattr(cursor, "rowcount", None)
+            if rowcount is not None and rowcount >= 0:
+                span.set_attribute("db.row_count", rowcount)
+                span.set_attribute("db.response.returned_rows", rowcount)
+            return result
 
 
 def traced_django_cursor_exec(
@@ -252,18 +245,11 @@ def traced_django_cursor_exec(
             attributes=span_attrs,
             tracer_name="tracenest.postgres",
         ) as span:
-            try:
-                with suppress_db_instrumentation():
-                    result = wrapped(*args, **kwargs)
-                cursor = getattr(instance, "cursor", instance)
-                rowcount = getattr(cursor, "rowcount", None)
-                if rowcount is not None and rowcount >= 0:
-                    span.set_attribute("db.row_count", rowcount)
-                    span.set_attribute("db.response.returned_rows", rowcount)
-                return result
-            except Exception as exc:
-                span.record_exception(exc)
-                span.set_attribute("error", True)
-                span.set_attribute("error.type", exc.__class__.__name__)
-                span.set_status(StatusCode.ERROR, description=str(exc))
-                raise
+            with suppress_db_instrumentation():
+                result = wrapped(*args, **kwargs)
+            cursor = getattr(instance, "cursor", instance)
+            rowcount = getattr(cursor, "rowcount", None)
+            if rowcount is not None and rowcount >= 0:
+                span.set_attribute("db.row_count", rowcount)
+                span.set_attribute("db.response.returned_rows", rowcount)
+            return result
