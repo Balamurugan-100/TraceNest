@@ -231,6 +231,9 @@ services:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: tp-otel-collector
     command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
+    environment:
+      - GOMEMLIMIT=180MiB
+      - GOGC=80
     deploy:
       resources:
         limits:
@@ -241,6 +244,7 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC receiver
       - "4318:4318" # OTLP HTTP receiver (used by tp_obs_v3 SDK)
+      - "8888:8888" # Internal Collector metrics endpoint (heap, queues, rss)
       - "8889:8889" # Prometheus metrics exporter
     depends_on:
       tempo:

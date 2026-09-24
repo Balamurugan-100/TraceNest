@@ -19,9 +19,9 @@ receivers:
 
 processors:
   memory_limiter:
-    check_interval: 1s
-    limit_percentage: 70
-    spike_limit_percentage: 20
+    check_interval: 500ms
+    limit_mib: 180
+    spike_limit_mib: 40
 
   resource/drop_ephemeral:
     attributes:
@@ -31,19 +31,18 @@ processors:
         action: delete
 
   batch:
-    timeout: 1s
-    send_batch_size: 256
+    timeout: 500ms
+    send_batch_size: 128
+    send_batch_max_size: 256
 
 connectors:
   spanmetrics:
     histogram:
       explicit:
-        buckets: [2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets: [2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s]
     dimensions:
       - name: http.method
-      - name: http.request.method
       - name: http.status_code
-      - name: http.response.status_code
       - name: http.route
       - name: db.system
       - name: db.operation
@@ -53,13 +52,17 @@ connectors:
       - name: server.port
       - name: error
       - name: span.type
-    dimensions_cache_size: 1500
+    dimensions_cache_size: 1000
 
 exporters:
   otlp/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 100
 
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -81,3 +84,5 @@ service:
   telemetry:
     logs:
       level: info
+    metrics:
+      address: 0.0.0.0:8888
