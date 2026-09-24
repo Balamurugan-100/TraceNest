@@ -4,18 +4,9 @@ TraceNest is an OpenTelemetry-based observability SDK for synchronous Django app
 
 ## Documentation
 
-Detailed guides and architecture references are available in the [`docs/`](docs/) directory:
+For a comprehensive overview of the architecture, components, workflows, and decision log, see:
 
-| Document | Description |
-| :--- | :--- |
-| [**Architecture & System Design**](docs/Architecture.md) | High-level data flow, OTel collector pipelines, ports, and Tempo/Prometheus topology |
-| [**Observability Fundamentals**](docs/Basics.md) | Introduction to OpenTelemetry concepts, RED/USE methods, and distributed tracing |
-| [**Supported Components**](docs/Components.md) | Details on Django, PostgreSQL, PgBouncer, Redis, HTTP (`requests`), and Boto3 tracing |
-| [**How Instrumentation Works**](docs/How_instrumentation_works.md) | Internal mechanics of `wrapt` monkey-patching, `contextvars`, and span lifecycle |
-| [**Custom Instrumentation Guide**](docs/Custom_instrumentation.md) | Step-by-step guide for authoring custom integrations and wrappers |
-| [**Grafana Dashboards Guide**](docs/Dashboards.md) | Navigation map, triage workflows, PromQL metrics, and 8 pre-provisioned dashboards |
-| [**Decision Log (ADRs)**](docs/Decisions.md) | Key architectural decisions, trade-offs, and technical rationale |
-| [**Resource Usage & Load Test**](docs/Test_resource_usage.md) | Collector performance benchmarks, CPU/memory bounds, and sizing guidelines |
+- [**TraceNest Observability PoC Overview**](docs/Overview.md) — Complete end-to-end technical overview, architecture, component breakdown, resource usage benchmarks, and decision index.
 
 ---
 
